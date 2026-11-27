@@ -1,0 +1,14 @@
+{
+  "name": "zebrasign",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "test": "sh test/run-all.sh",
+    "e2e": "node test/e2e.js"
+  },
+  "devDependencies": {
+    "bcrypt-pbkdf": "^1.0.2",
+    "playwright": "^1.50.0",
+    "sshpk": "^1.18.0"
+  }
+}

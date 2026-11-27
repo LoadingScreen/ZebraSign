@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://api.github.com; img-src https://avatars.githubusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ZebraSign · Sign</title>
+<style>
+:root{
+  --bg:#f1f3f6; --panel:#f9fafc; --panel2:#e7eaef; --line:#dde0e7;
+  --ink:#23262d; --dim:#5b626d; --dimmer:#8b909b;
+  --accent:#3f5d8f; --accent-soft:rgba(63,93,143,.10); --accent-line:rgba(63,93,143,.30);
+  --green:#357a4a; --green-soft:rgba(53,122,74,.12);
+  --red:#b23a4b; --red-soft:rgba(178,58,75,.10);
+  --amber:#8a6212; --amber-soft:rgba(138,98,18,.10);
+  --sans:Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+  --input-bg:#ffffff;
+}
+html[data-theme="dark"]{
+  --bg:#11141a; --panel:#171b22; --panel2:#1d222b; --line:#262b34;
+  --ink:#e4e7ee; --dim:#9aa1ad; --dimmer:#646b78;
+  --accent:#8aa6d8; --accent-soft:rgba(138,166,216,.13); --accent-line:rgba(138,166,216,.34);
+  --green:#6fcf8f; --green-soft:rgba(111,207,143,.12);
+  --red:#e8788a; --red-soft:rgba(232,120,138,.12);
+  --amber:#e0b55c; --amber-soft:rgba(224,181,92,.12);
+  --input-bg:#0e1116;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{min-height:100vh}
+.wrap{max-width:800px;margin:0 auto;padding:0 22px 90px}
+::selection{background:var(--accent-soft)}
+a{color:var(--accent)}
+
+.sitenav{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding:24px 0 18px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.sitenav .wm{font-size:20px;font-weight:600;letter-spacing:.01em;color:var(--ink);text-decoration:none}
+.sitenav .links{margin-left:auto;display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+.sitenav a.lnk{font-size:15px;color:var(--dim);text-decoration:none}
+.sitenav a.lnk:hover{color:var(--ink)}
+.sitenav a.lnk.on{color:var(--accent)}
+.themetoggle{background:none;border:0;padding:2px;margin:0 0 0 2px;cursor:pointer;color:var(--dim);line-height:0;align-self:center}
+.themetoggle:hover{color:var(--ink);background:none}
+.themetoggle .ic-sun{display:none}.themetoggle .ic-moon{display:inline}
+html[data-theme="dark"] .themetoggle .ic-sun{display:inline}
+html[data-theme="dark"] .themetoggle .ic-moon{display:none}
+
+.hd{padding:30px 0 6px}
+h1{font-weight:600;letter-spacing:-.01em;font-size:clamp(30px,6vw,48px);margin:0;color:var(--ink)}
+.sub{color:var(--dim);margin:16px 0 0;max-width:60ch;font-size:16px;line-height:1.62}
+
+.panel{border:1px solid var(--line);background:var(--panel);margin-top:22px;border-radius:5px}
+.phead{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;padding:16px 20px 10px}
+.pnum{font-weight:600;color:var(--accent);font-size:15px}
+.ptitle{font-size:19px;font-weight:600;color:var(--ink)}
+.phint{flex-basis:100%;width:100%;margin:2px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}
+.pbody{padding:4px 20px 20px}
+label.fld{display:block;font-size:14px;color:var(--dim);margin:0 0 7px}
+textarea,input[type=text],input[type=password]{
+  width:100%;background:var(--input-bg);color:var(--ink);border:1px solid var(--line);
+  font-family:var(--mono);font-size:13px;padding:10px 12px;border-radius:3px;outline:none;resize:vertical}
+textarea:focus,input:focus{border-color:var(--accent-line);box-shadow:0 0 0 2px var(--accent-soft)}
+textarea{min-height:64px;line-height:1.5}
+textarea.msg{font-family:var(--sans);font-size:15px;min-height:96px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.mt{margin-top:12px}
+button{
+  font-family:var(--sans);font-size:15px;font-weight:500;cursor:pointer;
+  background:transparent;color:var(--ink);border:1px solid var(--line);padding:8px 16px;border-radius:3px;transition:.14s}
+button:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
+button.primary{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line);font-weight:600}
+button.primary:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+button.small{padding:5px 11px;font-size:13px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:disabled:hover{border-color:var(--line);color:var(--ink);background:transparent}
+.filebtn{font-size:13px;color:var(--dim);cursor:pointer}
+.filebtn input{display:none}
+.filebtn span{text-decoration:underline;text-underline-offset:2px}
+.filebtn:hover{color:var(--accent)}
+
+.status{font-size:14px;color:var(--dim);margin-top:12px;line-height:1.55}
+.status:empty{display:none}
+.status.err{color:var(--red)}
+.status.ok{color:var(--green)}
+
+.idlist{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.idlist:empty{display:none}
+.idrow{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start;border:1px solid var(--line);background:var(--bg);padding:10px 12px;border-radius:4px}
+.idrow.skip{opacity:.7}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--panel2);display:block}
+.idmeta{min-width:0}
+.idname{font-weight:600;font-size:15px}
+.idname a{color:var(--ink);text-decoration:none}
+.idname a:hover{color:var(--accent)}
+.idnote{font-weight:400;font-size:13px;color:var(--dimmer);margin-left:6px}
+.keys{list-style:none;margin:4px 0 0;padding:0}
+.keys li{font-family:var(--mono);color:var(--dim);font-size:11.5px;line-height:1.7;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.keys .kt{color:var(--dimmer);min-width:6.2em}
+.keys .fp{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.keys li.dead{color:var(--dimmer)}
+.st{font-family:var(--sans);font-size:12px;white-space:nowrap}
+.st.ok{color:var(--green)}
+.st.warn{color:var(--amber)}
+.st.wait{color:var(--dimmer)}
+.summary{font-size:14px;color:var(--dim);margin-top:12px}
+
+.out{margin-top:16px;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:14px}
+.sigtext{font-family:var(--mono);font-size:11.5px;color:var(--green);line-height:1.55;white-space:pre;overflow-x:auto;margin:0;max-height:320px;overflow-y:auto}
+.outfoot{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px;font-size:14px;color:var(--dim)}
+
+.verdict{display:flex;align-items:center;gap:16px;border:1px solid var(--line);border-radius:4px;padding:18px;margin-top:16px;background:var(--bg)}
+.vbadge{font-weight:700;font-size:18px;letter-spacing:.04em;padding:6px 14px;border-radius:3px}
+.v-valid .vbadge{color:var(--green);border:1px solid var(--green-soft);background:var(--green-soft)}
+.v-invalid .vbadge{color:var(--red);border:1px solid var(--red-soft);background:var(--red-soft)}
+.vtext{font-size:15px;color:var(--dim);line-height:1.55}
+.vtext b{color:var(--ink)}
+.msgbox{margin-top:16px;border-left:2px solid var(--accent-line);padding:4px 0 4px 16px;font-size:16px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word}
+.meta{font-size:13px;color:var(--dimmer);margin-top:10px}
+.note{font-size:14px;color:var(--dim);margin-top:14px;line-height:1.55;max-width:64ch}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:4px;font-size:14px;font-weight:500;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{margin-top:40px;color:var(--dimmer);font-size:14px;line-height:1.68;border-top:1px solid var(--line);padding-top:20px}
+footer p{margin:0 0 10px;max-width:64ch}
+footer a{color:var(--accent);text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media(max-width:560px){
+  .sitenav .links{margin-left:0;width:100%}
+  .keys .kt{min-width:0}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="sitenav">
+    <a class="wm" href="sign.html">ZebraSign</a>
+    <div class="links">
+      <a class="lnk on" href="sign.html">Sign</a>
+      <a class="lnk" href="verify.html">Verify</a>
+      <button class="themetoggle" onclick="toggleTheme()" aria-label="Switch theme">
+        <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.6 6.6 0 0 0 21 12.8z"/></svg>
+        <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <header class="hd">
+    <h1>ZebraSign</h1>
+    <p class="sub">Sign a message as one of a group of GitHub users, using the SSH keys they already publish on GitHub. Anyone can check that one of them signed it, but not which one.</p>
+  </header>
+
+  <section class="panel">
+    <div class="phead"><span class="pnum">1</span><span class="ptitle">Ring</span>
+      <p class="phint">GitHub usernames, one per line. Include your own. This page asks GitHub for each user's keys, so GitHub can see who you looked up. Each user uses 3 of the 60 requests GitHub allows per hour.</p>
+    </div>
+    <div class="pbody">
+      <textarea id="logins" rows="5" spellcheck="false" autocapitalize="off" placeholder="octocat&#10;torvalds&#10;your-username"></textarea>
+      <div class="row end mt"><button class="primary" id="fetchBtn">Fetch keys</button></div>
+      <div class="status" id="ringStatus"></div>
+      <div class="idlist" id="ringList"></div>
+      <div class="summary" id="ringSummary"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead"><span class="pnum">2</span><span class="ptitle">Message</span></div>
+    <div class="pbody">
+      <textarea id="msg" class="msg" rows="4"></textarea>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead"><span class="pnum">3</span><span class="ptitle">Private key</span>
+      <p class="phint">The private key for one of your keys in the ring, such as the contents of ~/.ssh/id_ed25519. It stays in this page. A key you added to GitHub as a signing key is the better choice, since it can't push code.</p>
+    </div>
+    <div class="pbody">
+      <textarea id="key" rows="5" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+      <div class="row mt"><label class="filebtn"><input type="file" id="keyFile"><span>Open a key file</span></label></div>
+      <div id="passRow" hidden>
+        <label class="fld mt" for="pass">Passphrase</label>
+        <input type="password" id="pass" autocomplete="off">
+      </div>
+      <div class="status" id="keyStatus"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead"><span class="pnum">4</span><span class="ptitle">Signature</span></div>
+    <div class="pbody">
+      <div class="row end"><button class="primary" id="signBtn" disabled>Sign</button></div>
+      <div class="status" id="signStatus"></div>
+      <div id="signOut"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Everything runs in this page. Your private key and message aren't sent anywhere; the only network requests are to GitHub for public keys and avatars. Nothing is saved.</p>
+    <p>This is a test version. The RSA proof and the way different key types are combined haven't been reviewed by a cryptographer yet.</p>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// ZebraSign core: byte helpers, encodings, hashing, bigint math.
+'use strict';
+
+const te = new TextEncoder();
+const tdStrict = new TextDecoder('utf-8', { fatal: true });
+
+function concatBytes(...arrs) {
+  let n = 0;
+  for (const a of arrs) n += a.length;
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const a of arrs) { out.set(a, o); o += a.length; }
+  return out;
+}
+
+function bytesEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+}
+
+function compareBytes(a, b) {
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return a.length - b.length;
+}
+
+function toHex(u8) {
+  let s = '';
+  for (const b of u8) s += b.toString(16).padStart(2, '0');
+  return s;
+}
+
+function fromHex(s) {
+  if (s.length % 2 || /[^0-9a-fA-F]/.test(s)) throw new Error('bad hex');
+  const out = new Uint8Array(s.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.substr(i * 2, 2), 16);
+  return out;
+}
+
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function b64enc(u8) {
+  let s = '';
+  let i = 0;
+  for (; i + 2 < u8.length; i += 3) {
+    const n = (u8[i] << 16) | (u8[i + 1] << 8) | u8[i + 2];
+    s += B64[n >> 18] + B64[(n >> 12) & 63] + B64[(n >> 6) & 63] + B64[n & 63];
+  }
+  if (i < u8.length) {
+    const n = (u8[i] << 16) | ((i + 1 < u8.length ? u8[i + 1] : 0) << 8);
+    s += B64[n >> 18] + B64[(n >> 12) & 63];
+    s += i + 1 < u8.length ? B64[(n >> 6) & 63] + '=' : '==';
+  }
+  return s;
+}
+
+function b64dec(str) {
+  const s = str.replace(/\s+/g, '');
+  if (s.length % 4 === 1 || /[^A-Za-z0-9+/=]/.test(s) || /=[^=]/.test(s)) throw new Error('bad base64');
+  const clean = s.replace(/=+$/, '');
+  const out = new Uint8Array(Math.floor(clean.length * 3 / 4));
+  let o = 0, acc = 0, bits = 0;
+  for (const ch of clean) {
+    acc = (acc << 6) | B64.indexOf(ch);
+    bits += 6;
+    if (bits >= 8) { bits -= 8; out[o++] = (acc >> bits) & 255; }
+  }
+  return out;
+}
+
+// Big-endian and little-endian bigint conversions.
+function bytesToBig(u8) {
+  let n = 0n;
+  for (const b of u8) n = (n << 8n) | BigInt(b);
+  return n;
+}
+function bigToBytes(n, len) {
+  const out = new Uint8Array(len);
+  for (let i = len - 1; i >= 0; i--) { out[i] = Number(n & 255n); n >>= 8n; }
+  if (n !== 0n) throw new Error('number too large for field');
+  return out;
+}
+function bytesToBigLE(u8) { return bytesToBig(Uint8Array.from(u8).reverse()); }
+function bigToBytesLE(n, len) { return bigToBytes(n, len).reverse(); }
+
+function bitLength(n) { return n === 0n ? 0 : n.toString(2).length; }
+function byteLength(n) { return Math.ceil(bitLength(n) / 8); }
+
+function mod(a, m) { const r = a % m; return r < 0n ? r + m : r; }
+
+function modpow(b, e, m) {
+  if (m === 1n) return 0n;
+  let r = 1n;
+  b = mod(b, m);
+  while (e > 0n) {
+    if (e & 1n) r = (r * b) % m;
+    e >>= 1n;
+    if (e > 0n) b = (b * b) % m;
+  }
+  return r;
+}
+
+function egcd(a, b) {
+  let [r0, r1] = [a, b], [s0, s1] = [1n, 0n];
+  while (r1 !== 0n) {
+    const q = r0 / r1;
+    [r0, r1] = [r1, r0 - q * r1];
+    [s0, s1] = [s1, s0 - q * s1];
+  }
+  return [r0, s0]; // gcd, x with a*x = gcd (mod b)
+}
+
+function modinv(a, m) {
+  const [g, x] = egcd(mod(a, m), m);
+  if (g !== 1n) throw new Error('not invertible');
+  return mod(x, m);
+}
+
+function randBytes(n) {
+  const out = new Uint8Array(n);
+  for (let i = 0; i < n; i += 65536) crypto.getRandomValues(out.subarray(i, Math.min(n, i + 65536)));
+  return out;
+}
+
+// Uniform-enough integer in [0, q): 128 extra bits make the bias negligible.
+function randBelow(q) { return mod(bytesToBig(randBytes(byteLength(q) + 16)), q); }
+
+async function sha256(u8) { return new Uint8Array(await crypto.subtle.digest('SHA-256', u8)); }
+async function sha512(u8) { return new Uint8Array(await crypto.subtle.digest('SHA-512', u8)); }
+
+// SSH wire format (RFC 4251).
+class SshReader {
+  constructor(u8) { this.b = u8; this.o = 0; }
+  need(n) { if (this.o + n > this.b.length) throw new Error('truncated data'); }
+  u32() { this.need(4); const b = this.b, o = this.o; this.o += 4; return ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0; }
+  bytes(n) { this.need(n); const r = this.b.subarray(this.o, this.o + n); this.o += n; return r; }
+  string() { return this.bytes(this.u32()); }
+  text() { return tdStrict.decode(this.string()); }
+  mpint() {
+    const s = this.string();
+    if (s.length && s[0] & 0x80) throw new Error('negative mpint');
+    return bytesToBig(s);
+  }
+  rest() { return this.b.subarray(this.o); }
+  done() { return this.o === this.b.length; }
+}
+
+function u32be(n) { return Uint8Array.of(n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255); }
+function sshString(u8) { if (typeof u8 === 'string') u8 = te.encode(u8); return concatBytes(u32be(u8.length), u8); }
+function sshMpint(n) {
+  if (n === 0n) return sshString(new Uint8Array(0));
+  let b = bigToBytes(n, byteLength(n));
+  if (b[0] & 0x80) b = concatBytes(Uint8Array.of(0), b);
+  return sshString(b);
+}
+
+// Plain-language error. The UI shows .message as is.
+class ZsError extends Error {}
+function fail(msg) { throw new ZsError(msg); }
+
+// Edwards25519 group arithmetic (RFC 8032), extended coordinates.
+// Not constant time: BigInt arithmetic in JS can't be.
+
+const ED = (() => {
+  const p = 2n ** 255n - 19n;
+  const q = 2n ** 252n + 27742317777372353535851937790883648493n;
+  const f = (a) => { const r = a % p; return r < 0n ? r + p : r; };
+  const inv = (a) => modpow(a, p - 2n, p);
+  const d = f(-121665n * inv(121666n));
+  const sqrtm1 = modpow(2n, (p - 1n) / 4n, p);
+  const ZERO = [0n, 1n, 1n, 0n];
+
+  function add(P, Q) {
+    const [X1, Y1, Z1, T1] = P, [X2, Y2, Z2, T2] = Q;
+    const A = f((Y1 - X1) * (Y2 - X2)), B = f((Y1 + X1) * (Y2 + X2));
+    const C = f(T1 * 2n * d * T2), D = f(Z1 * 2n * Z2);
+    const E = B - A, F = D - C, G = D + C, H = B + A;
+    return [f(E * F), f(G * H), f(F * G), f(E * H)];
+  }
+  function dbl(P) {
+    const [X1, Y1, Z1] = P;
+    const A = f(X1 * X1), B = f(Y1 * Y1), C = f(2n * Z1 * Z1);
+    const D = p - A, E = f((X1 + Y1) * (X1 + Y1) - A - B);
+    const G = D + B, F = G - C, H = D - B;
+    return [f(E * F), f(G * H), f(F * G), f(E * H)];
+  }
+  function neg(P) { return [f(-P[0]), P[1], P[2], f(-P[3])]; }
+  function mul(P, k) {
+    let R = ZERO;
+    for (let i = bitLength(k) - 1; i >= 0; i--) {
+      R = dbl(R);
+      if ((k >> BigInt(i)) & 1n) R = add(R, P);
+    }
+    return R;
+  }
+  function isZero(P) { return f(P[0]) === 0n && f(P[1] - P[2]) === 0n; }
+  function encode(P) {
+    const zi = inv(P[2]);
+    const x = f(P[0] * zi), y = f(P[1] * zi);
+    const out = bigToBytesLE(y, 32);
+    if (x & 1n) out[31] |= 0x80;
+    return out;
+  }
+  function decode(b) {
+    if (b.length !== 32) return null;
+    const yb = Uint8Array.from(b);
+    const sign = (yb[31] >> 7) & 1;
+    yb[31] &= 0x7f;
+    const y = bytesToBigLE(yb);
+    if (y >= p) return null;
+    const u = f(y * y - 1n), v = f(d * y * y + 1n);
+    const v3 = f(v * v * v);
+    let x = f(u * v3 * modpow(f(u * v3 * v3 * v), (p - 5n) / 8n, p));
+    const vx2 = f(v * x * x);
+    if (vx2 === u) { /* ok */ } else if (vx2 === f(-u)) x = f(x * sqrtm1);
+    else return null;
+    if (x === 0n && sign) return null;
+    if (Number(x & 1n) !== sign) x = p - x;
+    return [x, y, 1n, f(x * y)];
+  }
+  const Gy = f(4n * inv(5n));
+  const G = decode(bigToBytesLE(Gy, 32));
+
+  return { name: 'ed25519', p, q, G, ZERO, add, dbl, neg, mul, isZero, encode, decode };
+})();
+
+// Secret scalar from a 32-byte Ed25519 seed (RFC 8032 5.1.5).
+async function ed25519ScalarFromSeed(seed) {
+  const h = await sha512(seed);
+  const a = Uint8Array.from(h.subarray(0, 32));
+  a[0] &= 248; a[31] &= 127; a[31] |= 64;
+  return mod(bytesToBigLE(a), ED.q);
+}
+
+// NIST P-256 group arithmetic, Jacobian coordinates (a = -3).
+
+const P256 = (() => {
+  const p = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
+  const q = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+  const b = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn;
+  const Gx = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n;
+  const Gy = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n;
+  const f = (a) => { const r = a % p; return r < 0n ? r + p : r; };
+  const ZERO = [1n, 1n, 0n];
+  const G = [Gx, Gy, 1n];
+
+  const isZero = (P) => P[2] === 0n;
+  function dbl(P) {
+    if (isZero(P) || P[1] === 0n) return ZERO;
+    const [X, Y, Z] = P;
+    const delta = f(Z * Z), gamma = f(Y * Y), beta = f(X * gamma);
+    const alpha = f(3n * (X - delta) * (X + delta));
+    const X3 = f(alpha * alpha - 8n * beta);
+    const Z3 = f((Y + Z) * (Y + Z) - gamma - delta);
+    const Y3 = f(alpha * (4n * beta - X3) - 8n * gamma * gamma);
+    return [X3, Y3, Z3];
+  }
+  function add(P, Q) {
+    if (isZero(P)) return Q;
+    if (isZero(Q)) return P;
+    const [X1, Y1, Z1] = P, [X2, Y2, Z2] = Q;
+    const Z1Z1 = f(Z1 * Z1), Z2Z2 = f(Z2 * Z2);
+    const U1 = f(X1 * Z2Z2), U2 = f(X2 * Z1Z1);
+    const S1 = f(Y1 * Z2 * Z2Z2), S2 = f(Y2 * Z1 * Z1Z1);
+    const H = f(U2 - U1), r = f(2n * (S2 - S1));
+    if (H === 0n) return r === 0n ? dbl(P) : ZERO;
+    const I = f(4n * H * H), J = f(H * I), V = f(U1 * I);
+    const X3 = f(r * r - J - 2n * V);
+    const Y3 = f(r * (V - X3) - 2n * S1 * J);
+    const Z3 = f(((Z1 + Z2) * (Z1 + Z2) - Z1Z1 - Z2Z2) * H);
+    return [X3, Y3, Z3];
+  }
+  const neg = (P) => [P[0], f(-P[1]), P[2]];
+  function mul(P, k) {
+    let R = ZERO;
+    for (let i = bitLength(k) - 1; i >= 0; i--) {
+      R = dbl(R);
+      if ((k >> BigInt(i)) & 1n) R = add(R, P);
+    }
+    return R;
+  }
+  function affine(P) {
+    const zi = modpow(P[2], p - 2n, p), zi2 = f(zi * zi);
+    return [f(P[0] * zi2), f(P[1] * zi2 * zi)];
+  }
+  // SEC1 compressed; the point at infinity is a single zero byte.
+  function encode(P) {
+    if (isZero(P)) return Uint8Array.of(0);
+    const [x, y] = affine(P);
+    return concatBytes(Uint8Array.of(2 | Number(y & 1n)), bigToBytes(x, 32));
+  }
+  function encodeUncompressed(P) {
+    const [x, y] = affine(P);
+    return concatBytes(Uint8Array.of(4), bigToBytes(x, 32), bigToBytes(y, 32));
+  }
+  // Uncompressed SEC1 only (that's what OpenSSH uses). Cofactor is 1, so
+  // on-curve is enough.
+  function decode(u8) {
+    if (u8.length !== 65 || u8[0] !== 4) return null;
+    const x = bytesToBig(u8.subarray(1, 33)), y = bytesToBig(u8.subarray(33));
+    if (x >= p || y >= p) return null;
+    if (f(y * y) !== f(x * x * x - 3n * x + b)) return null;
+    return [x, y, 1n];
+  }
+  return { name: 'p256', p, q, G, ZERO, add, dbl, neg, mul, isZero, encode, encodeUncompressed, decode };
+})();
+
+// Public keys: parse OpenSSH key lines, decide what's usable, and the
+// per-type sigma protocols that the OR-proof is built from.
+
+const CHAL_BYTES = 16; // 128-bit challenges
+
+// Schnorr proof of knowledge of a discrete log, over a prime-order group.
+function makeSchnorr(group, scalarLen) {
+  const c2n = (c) => bytesToBig(c); // c < 2^128 < q
+  return {
+    simulate(pub, c) {
+      const s = randBelow(group.q);
+      const R = group.add(group.mul(group.G, s), group.neg(group.mul(pub.point, c2n(c))));
+      return { t: group.encode(R), z: bigToBytes(s, scalarLen) };
+    },
+    commit() {
+      const r = randBelow(group.q);
+      return { t: group.encode(group.mul(group.G, r)), st: r };
+    },
+    respond(pub, sec, r, c) {
+      return bigToBytes(mod(r + c2n(c) * sec.x, group.q), scalarLen);
+    },
+    recompute(pub, c, z) {
+      if (z.length !== scalarLen) return null;
+      const s = bytesToBig(z);
+      if (s >= group.q) return null;
+      const R = group.add(group.mul(group.G, s), group.neg(group.mul(pub.point, c2n(c))));
+      return group.encode(R);
+    },
+  };
+}
+
+const KEY_TYPES = {};
+
+KEY_TYPES['ssh-ed25519'] = {
+  kind: 'ed25519',
+  proto: makeSchnorr(ED, 32),
+  async parse(r) {
+    const a = r.string();
+    if (a.length !== 32) fail('Ed25519 key has the wrong length.');
+    const point = ED.decode(a);
+    if (!point) fail('Ed25519 key is not a valid curve point.');
+    // The identity has secret 0: anyone could sign for it.
+    if (ED.isZero(point)) fail('Ed25519 key is the identity point.');
+    // Reject keys with a small-order component; nobody could prove knowledge for them.
+    if (!ED.isZero(ED.mul(point, ED.q))) fail('Ed25519 key is not in the prime-order group.');
+    return { point, id: 'ed25519:' + toHex(a) };
+  },
+};
+
+KEY_TYPES['ecdsa-sha2-nistp256'] = {
+  kind: 'p256',
+  proto: makeSchnorr(P256, 32),
+  async parse(r) {
+    if (r.text() !== 'nistp256') fail('P-256 key names the wrong curve.');
+    const q = r.string();
+    const point = P256.decode(q);
+    if (!point) fail('P-256 key is not a valid curve point.');
+    return { point, id: 'p256:' + toHex(q) };
+  },
+};
+
+const UNUSABLE_TYPES = {
+  'sk-ssh-ed25519@openssh.com': 'Hardware security key; it can\'t be used in a ring.',
+  'sk-ecdsa-sha2-nistp256@openssh.com': 'Hardware security key; it can\'t be used in a ring.',
+  'ecdsa-sha2-nistp384': 'P-384 keys aren\'t supported.',
+  'ecdsa-sha2-nistp521': 'P-521 keys aren\'t supported.',
+  'ssh-dss': 'DSA keys aren\'t supported.',
+};
+
+// "ssh-ed25519 AAAA... comment" -> { type, blob }
+function parseKeyLine(line) {
+  const parts = line.trim().split(/\s+/);
+  if (parts.length < 2) fail('Not an OpenSSH public key.');
+  let blob;
+  try { blob = b64dec(parts[1]); } catch (e) { fail('Not an OpenSSH public key.'); }
+  return { type: parts[0], blob };
+}
+
+function fingerprint(hash) { return 'SHA256:' + b64enc(hash).replace(/=+$/, ''); }
+
+// Returns { usable: true, key } or { usable: false, type, reason }.
+async function prepareKey(line) {
+  let type = '?';
+  try {
+    const kl = parseKeyLine(line);
+    type = kl.type;
+    if (UNUSABLE_TYPES[type]) return { usable: false, type, reason: UNUSABLE_TYPES[type] };
+    const kt = KEY_TYPES[type];
+    if (!kt) return { usable: false, type, reason: 'Unknown key type.' };
+    const r = new SshReader(kl.blob);
+    if (r.text() !== type) fail('Key type doesn\'t match key data.');
+    const pub = await kt.parse(r, kl.blob);
+    if (!r.done()) fail('Key has trailing data.');
+    const hash = await sha256(kl.blob);
+    return {
+      usable: true,
+      key: Object.assign(pub, {
+        type, kind: kt.kind, proto: kt.proto, blob: kl.blob,
+        line: type + ' ' + b64enc(kl.blob), fpHash: hash, fp: fingerprint(hash),
+      }),
+    };
+  } catch (e) {
+    if (e instanceof ZsError) return { usable: false, type, reason: e.message };
+    throw e;
+  }
+}
+
+// RSA keys: Guillou-Quisquater proof of knowledge of an e-th root.
+//
+// Each key gets a fixed y = FDH(key) in Z_n. Only the key's owner can compute
+// x = y^d. One GQ round has a challenge below e, so the 128-bit challenge is
+// split into chunks of floor(log2 e) bits (16 for e = 65537, giving 8 rounds).
+
+const SMALL_PRIMES = (() => {
+  const lim = 4096, sieve = new Uint8Array(lim), out = [];
+  for (let i = 2; i < lim; i++) if (!sieve[i]) { out.push(i); for (let j = i * i; j < lim; j += i) sieve[j] = 1; }
+  return out;
+})();
+
+function isSmallPrime(e) { // e < 2^32, as a Number
+  if (e < 2) return false;
+  for (let i = 2; i * i <= e; i++) if (e % i === 0) return false;
+  return true;
+}
+
+// Integer k-th root (floor) by Newton's method.
+function iroot(n, k) {
+  if (n < 2n) return n;
+  const K = BigInt(k);
+  let x = 1n << BigInt(Math.ceil(bitLength(n) / k));
+  for (;;) {
+    const y = ((K - 1n) * x + n / (x ** (K - 1n))) / K;
+    if (y >= x) return x;
+    x = y;
+  }
+}
+
+// Rejects moduli that would let anyone compute e-th roots: primes, prime
+// powers, and numbers with small factors. A real RSA modulus passes.
+function checkModulus(n) {
+  if (!(n & 1n)) return false;
+  for (const p of SMALL_PRIMES) if (n % BigInt(p) === 0n) return false;
+  // Fermat test base 2: a real modulus fails it, a prime passes.
+  if (modpow(2n, n - 1n, n) === 1n) return false;
+  const maxK = Math.floor(bitLength(n) / 12);
+  for (const k of SMALL_PRIMES) {
+    if (k > maxK) break;
+    const r = iroot(n, k);
+    if (r ** BigInt(k) === n) return false;
+  }
+  return true;
+}
+
+async function rsaFdh(blob, n) {
+  const len = byteLength(n) + 16, parts = [];
+  const tag = sshString(DOMAIN + '/rsa-fdh');
+  for (let i = 0, got = 0; got < len; i++, got += 32) parts.push(await sha256(concatBytes(u32be(i), tag, sshString(blob))));
+  return mod(bytesToBig(concatBytes(...parts).subarray(0, len)), n);
+}
+
+function gqChunks(pub, c) {
+  const cb = bytesToBig(c), total = CHAL_BYTES * 8, out = [];
+  for (let j = 0; j < pub.rounds; j++) {
+    const start = j * pub.bits, end = Math.min(total, start + pub.bits);
+    out.push((cb >> BigInt(total - end)) & ((1n << BigInt(end - start)) - 1n));
+  }
+  return out;
+}
+
+const randUnit = (n) => randBelow(n - 1n) + 1n;
+
+const GQ = {
+  simulate(pub, c) {
+    const ts = [], zs = [];
+    gqChunks(pub, c).forEach((cj) => {
+      const z = randUnit(pub.n);
+      ts.push(bigToBytes((modpow(z, pub.e, pub.n) * modpow(pub.yinv, cj, pub.n)) % pub.n, pub.k));
+      zs.push(bigToBytes(z, pub.k));
+    });
+    return { t: concatBytes(...ts), z: concatBytes(...zs) };
+  },
+  commit(pub) {
+    const rs = [], ts = [];
+    for (let j = 0; j < pub.rounds; j++) {
+      const r = randUnit(pub.n);
+      rs.push(r);
+      ts.push(bigToBytes(modpow(r, pub.e, pub.n), pub.k));
+    }
+    return { t: concatBytes(...ts), st: rs };
+  },
+  respond(pub, sec, rs, c) {
+    return concatBytes(...gqChunks(pub, c).map((cj, j) => bigToBytes((rs[j] * modpow(sec.x, cj, pub.n)) % pub.n, pub.k)));
+  },
+  recompute(pub, c, z) {
+    if (z.length !== pub.k * pub.rounds) return null;
+    const ts = [];
+    const cs = gqChunks(pub, c);
+    for (let j = 0; j < pub.rounds; j++) {
+      const zj = bytesToBig(z.subarray(j * pub.k, (j + 1) * pub.k));
+      if (zj <= 0n || zj >= pub.n) return null;
+      ts.push(bigToBytes((modpow(zj, pub.e, pub.n) * modpow(pub.yinv, cs[j], pub.n)) % pub.n, pub.k));
+    }
+    return concatBytes(...ts);
+  },
+};
+
+function rsaId(n, e) { return 'rsa:' + e.toString(16) + ':' + n.toString(16); }
+
+KEY_TYPES['ssh-rsa'] = {
+  kind: 'rsa',
+  proto: GQ,
+  async parse(r) {
+    const e = r.mpint(), n = r.mpint();
+    const bits = bitLength(n);
+    if (bits < 2048) fail('RSA key is ' + bits + ' bits; at least 2048 are needed.');
+    if (bits > 16384) fail('RSA key is too large.');
+    if (e >= 2n ** 32n || !isSmallPrime(Number(e)) || e < 3n) fail('RSA key has an unusual public exponent.');
+    if (!checkModulus(n)) fail('RSA key has an invalid modulus.');
+    const blob = concatBytes(sshString('ssh-rsa'), sshMpint(e), sshMpint(n));
+    const y = await rsaFdh(blob, n);
+    let yinv;
+    try { yinv = modinv(y, n); } catch (err) { fail('RSA key has an invalid modulus.'); }
+    const eb = bitLength(e) - 1;
+    return { n, e, y, yinv, k: byteLength(n), bits: eb, rounds: Math.ceil(CHAL_BYTES * 8 / eb), id: rsaId(n, e) };
+  },
+};
+
+// x = y^d mod n via CRT, checked against x^e = y.
+async function rsaPrivate(n, e, d, p, q) {
+  if (p * q !== n || d <= 0n) fail('The RSA key is damaged.');
+  const blob = concatBytes(sshString('ssh-rsa'), sshMpint(e), sshMpint(n));
+  const y = await rsaFdh(blob, n);
+  const xp = modpow(y, d % (p - 1n), p), xq = modpow(y, d % (q - 1n), q);
+  const x = xq + q * mod((xp - xq) * modinv(q, p), p);
+  if (modpow(x, e, n) !== y) fail('The RSA key is damaged.');
+  return { id: rsaId(n, e), sec: { x }, blob };
+}
+
+// Private key parsing: OpenSSH (openssh-key-v1) and older PEM formats.
+
+// "-----BEGIN X-----" blocks, with optional RFC 1421 headers.
+function parsePemBlock(text) {
+  const m = /-----BEGIN ([A-Z0-9 ]+)-----([\s\S]*?)-----END \1-----/.exec(text);
+  if (!m) return null;
+  const headers = {};
+  let body = m[2].replace(/\r/g, '');
+  const hm = /^\s*((?:[A-Za-z-]+:[^\n]*\n)+)\n/.exec(body);
+  if (hm) {
+    for (const ln of hm[1].trim().split('\n')) {
+      const i = ln.indexOf(':');
+      headers[ln.slice(0, i).trim()] = ln.slice(i + 1).trim();
+    }
+    body = body.slice(hm[0].length);
+  }
+  let bytes;
+  try { bytes = b64dec(body); } catch (e) { fail('The key text is damaged (bad base64). Copy it again.'); }
+  return { label: m[1], headers, bytes };
+}
+
+const PRIVATE_TYPES = {};
+
+PRIVATE_TYPES['ssh-ed25519'] = async (r) => {
+  const pub = r.string(), priv = r.string();
+  if (pub.length !== 32 || priv.length !== 64 || !bytesEqual(priv.subarray(32), pub)) fail('The Ed25519 key is damaged.');
+  const x = await ed25519ScalarFromSeed(priv.subarray(0, 32));
+  if (!bytesEqual(ED.encode(ED.mul(ED.G, x)), pub)) fail('The Ed25519 key is damaged.');
+  return { id: 'ed25519:' + toHex(pub), sec: { x }, blob: concatBytes(sshString('ssh-ed25519'), sshString(pub)) };
+};
+
+// From a P-256 secret scalar, with the public point if the file has one.
+function p256Private(d, qBytes) {
+  if (d <= 0n || d >= P256.q) fail('The P-256 key is damaged.');
+  const Q = P256.encodeUncompressed(P256.mul(P256.G, d));
+  if (qBytes && !bytesEqual(Q, qBytes)) fail('The P-256 key is damaged.');
+  return { id: 'p256:' + toHex(Q), sec: { x: d }, blob: concatBytes(sshString('ecdsa-sha2-nistp256'), sshString('nistp256'), sshString(Q)) };
+}
+
+PRIVATE_TYPES['ecdsa-sha2-nistp256'] = async (r) => {
+  if (r.text() !== 'nistp256') fail('The P-256 key is damaged.');
+  const qBytes = r.string();
+  return p256Private(r.mpint(), qBytes);
+};
+
+const OPENSSH_MAGIC = te.encode('openssh-key-v1\0');
+
+function opensshHeader(bytes) {
+  if (!bytesEqual(bytes.subarray(0, OPENSSH_MAGIC.length), OPENSSH_MAGIC)) fail('Not an OpenSSH private key.');
+  const r = new SshReader(bytes.subarray(OPENSSH_MAGIC.length));
+  const cipher = r.text(), kdf = r.text(), kdfopts = r.string();
+  if (r.u32() !== 1) fail('Key files with more than one key aren\'t supported.');
+  const pubBlob = r.string();
+  const priv = r.string();
+  return { cipher, kdf, kdfopts, pubBlob, priv, rest: r.rest() };
+}
+
+// What the UI needs before asking for a passphrase.
+function inspectPrivateKey(text) {
+  const t = text.trim();
+  if (!t) return { empty: true };
+  if (/^(ssh-|ecdsa-|sk-)\S+\s+AAAA/.test(t)) fail('That\'s a public key. Paste the private key: the file without .pub at the end.');
+  const pem = parsePemBlock(t);
+  if (!pem) fail('Not a private key. It should start with -----BEGIN.');
+  if (pem.label === 'OPENSSH PRIVATE KEY') {
+    const h = opensshHeader(pem.bytes);
+    return { format: 'openssh', encrypted: h.cipher !== 'none', pem };
+  }
+  if (PEM_FORMATS[pem.label]) {
+    return { format: 'pem', encrypted: pem.headers['Proc-Type'] === '4,ENCRYPTED', pem };
+  }
+  if (pem.label === 'ENCRYPTED PRIVATE KEY') fail('Encrypted PKCS#8 keys aren\'t supported. Convert it with: ssh-keygen -p -f yourkey');
+  fail('Unsupported key format (' + pem.label.toLowerCase() + ').');
+}
+
+// Returns { id, type, sec, blob }: id matches the ring key's id.
+async function parsePrivateKey(text, passphrase) {
+  const info = inspectPrivateKey(text);
+  if (info.empty) fail('Paste a private key.');
+  if (info.encrypted && !passphrase) fail('This key has a passphrase. Enter it.');
+  if (info.format === 'pem') return parsePemPrivateKey(info.pem, passphrase);
+
+  const h = opensshHeader(info.pem.bytes);
+  let plain = h.priv;
+  if (h.cipher !== 'none') plain = await opensshDecrypt(h, passphrase);
+  const r = new SshReader(plain);
+  const c1 = r.u32(), c2 = r.u32();
+  if (c1 !== c2) fail(h.cipher === 'none' ? 'The key is damaged.' : 'Wrong passphrase.');
+  const type = r.text();
+  const parse = PRIVATE_TYPES[type];
+  if (!parse) {
+    fail(UNUSABLE_TYPES[type] || ('Unsupported key type: ' + type + '.'));
+  }
+  const k = await parse(r);
+  if (!bytesEqual(k.blob, h.pubBlob)) {
+    const pk = await prepareKey(type + ' ' + b64enc(h.pubBlob));
+    if (!pk.usable || pk.key.id !== k.id) fail('The key is damaged: its public and private parts don\'t match.');
+  }
+  return Object.assign(k, { type });
+}
+
+// Filled in by 50-pem.js.
+const PEM_FORMATS = {};
+
+// bcrypt_pbkdf as used by OpenSSH (port of OpenBSD bcrypt_pbkdf.c), and
+// decryption of passphrase-protected openssh-key-v1 keys.
+
+// Blowfish's initial P-array and S-boxes are the first 1042 32-bit words of
+// pi's fractional hex digits. Computed once with Machin's formula.
+let BF_INIT = null;
+function blowfishInit() {
+  if (BF_INIT) return BF_INIT;
+  const words = 18 + 4 * 256, bits = BigInt(words * 32 + 64);
+  const one = 1n << bits;
+  const atanInv = (x) => { // arctan(1/x) * 2^bits
+    const x2 = x * x;
+    let term = one / x, sum = term, k = 1n, sign = -1n;
+    while (term > 0n) {
+      term /= x2; k += 2n;
+      sum += sign * (term / k); sign = -sign;
+    }
+    return sum;
+  };
+  const pi = 16n * atanInv(5n) - 4n * atanInv(239n);
+  const frac = (pi % one) >> 64n; // drop guard bits
+  const out = new Uint32Array(words);
+  for (let i = 0; i < words; i++) out[i] = Number((frac >> BigInt((words - 1 - i) * 32)) & 0xffffffffn);
+  if (out[0] !== 0x243f6a88 || out[18] !== 0xd1310ba6 || out[words - 1] !== 0x3ac372e6) throw new Error('Blowfish init failed');
+  BF_INIT = out;
+  return out;
+}
+
+function bfState() {
+  const init = blowfishInit();
+  return { P: init.slice(0, 18), S: init.slice(18) }; // S: four boxes, 256 each
+}
+
+function bfEncipher(st, d, i) {
+  const P = st.P, S = st.S;
+  let l = d[i], r = d[i + 1];
+  l ^= P[0];
+  for (let n = 1; n <= 16; n += 2) {
+    r ^= (((S[l >>> 24] + S[256 | ((l >>> 16) & 255)]) ^ S[512 | ((l >>> 8) & 255)]) + S[768 | (l & 255)]) ^ P[n];
+    l ^= (((S[r >>> 24] + S[256 | ((r >>> 16) & 255)]) ^ S[512 | ((r >>> 8) & 255)]) + S[768 | (r & 255)]) ^ P[n + 1];
+  }
+  d[i] = r ^ P[17];
+  d[i + 1] = l;
+}
+
+function streamWord(data, pos) {
+  let w = 0;
+  for (let i = 0; i < 4; i++) { w = (w << 8) | data[pos.j]; pos.j = (pos.j + 1) % data.length; }
+  return w >>> 0;
+}
+
+// Blowfish_expandstate when data is given, Blowfish_expand0state otherwise.
+function bfExpand(st, key, data) {
+  const kp = { j: 0 }, dp = { j: 0 };
+  for (let i = 0; i < 18; i++) st.P[i] ^= streamWord(key, kp);
+  const d = new Uint32Array(2);
+  for (let i = 0; i < 18; i += 2) {
+    if (data) { d[0] ^= streamWord(data, dp); d[1] ^= streamWord(data, dp); }
+    bfEncipher(st, d, 0);
+    st.P[i] = d[0]; st.P[i + 1] = d[1];
+  }
+  for (let i = 0; i < 1024; i += 2) {
+    if (data) { d[0] ^= streamWord(data, dp); d[1] ^= streamWord(data, dp); }
+    bfEncipher(st, d, 0);
+    st.S[i] = d[0]; st.S[i + 1] = d[1];
+  }
+}
+
+const BCRYPT_MAGIC = te.encode('OxychromaticBlowfishSwatDynamite');
+
+function bcryptHash(sha2pass, sha2salt) {
+  const st = bfState();
+  bfExpand(st, sha2pass, sha2salt);
+  for (let i = 0; i < 64; i++) { bfExpand(st, sha2salt, null); bfExpand(st, sha2pass, null); }
+  const cdata = new Uint32Array(8);
+  const pos = { j: 0 };
+  for (let i = 0; i < 8; i++) cdata[i] = streamWord(BCRYPT_MAGIC, pos);
+  for (let i = 0; i < 64; i++) for (let b = 0; b < 8; b += 2) bfEncipher(st, cdata, b);
+  const out = new Uint8Array(32);
+  for (let i = 0; i < 8; i++) {
+    out[4 * i] = cdata[i] & 255; out[4 * i + 1] = (cdata[i] >>> 8) & 255;
+    out[4 * i + 2] = (cdata[i] >>> 16) & 255; out[4 * i + 3] = cdata[i] >>> 24;
+  }
+  return out;
+}
+
+async function bcryptPbkdf(pass, salt, keylen, rounds) {
+  if (rounds < 1 || keylen < 1 || keylen > 1024) throw new Error('bad bcrypt_pbkdf parameters');
+  const stride = Math.ceil(keylen / 32);
+  let amt = Math.ceil(keylen / stride);
+  const key = new Uint8Array(keylen);
+  const sha2pass = await sha512(pass);
+  let remaining = keylen;
+  for (let count = 1; remaining > 0; count++) {
+    let sha2salt = await sha512(concatBytes(salt, u32be(count)));
+    let tmp = bcryptHash(sha2pass, sha2salt);
+    const out = Uint8Array.from(tmp);
+    for (let i = 1; i < rounds; i++) {
+      sha2salt = await sha512(tmp);
+      tmp = bcryptHash(sha2pass, sha2salt);
+      for (let j = 0; j < 32; j++) out[j] ^= tmp[j];
+    }
+    amt = Math.min(amt, remaining);
+    let i = 0;
+    for (; i < amt; i++) {
+      const dest = i * stride + (count - 1);
+      if (dest >= keylen) break;
+      key[dest] = out[i];
+    }
+    remaining -= i;
+  }
+  return key;
+}
+
+// OpenSSH cipher name -> WebCrypto parameters.
+const SSH_CIPHERS = {
+  'aes256-ctr': { alg: 'AES-CTR', keyLen: 32, ivLen: 16 },
+  'aes128-ctr': { alg: 'AES-CTR', keyLen: 16, ivLen: 16 },
+  'aes256-gcm@openssh.com': { alg: 'AES-GCM', keyLen: 32, ivLen: 12, tagLen: 16 },
+  'aes128-gcm@openssh.com': { alg: 'AES-GCM', keyLen: 16, ivLen: 12, tagLen: 16 },
+  'aes256-cbc': { alg: 'AES-CBC', keyLen: 32, ivLen: 16 },
+  'aes128-cbc': { alg: 'AES-CBC', keyLen: 16, ivLen: 16 },
+};
+
+// AES with no padding handling: OpenSSH pads the plaintext itself.
+async function aesDecrypt(ci, keyBytes, iv, data) {
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: ci.alg }, false, ['decrypt', 'encrypt']);
+  if (ci.alg === 'AES-CTR') {
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CTR', counter: iv, length: 128 }, key, data));
+  }
+  if (ci.alg === 'AES-GCM') {
+    try {
+      return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, key, data));
+    } catch (e) { return null; } // tag mismatch: wrong passphrase
+  }
+  // AES-CBC: WebCrypto insists on PKCS#7 padding. Encrypt a full padding block
+  // under the last ciphertext block and append it, so decrypt strips exactly that.
+  if (data.length % 16) return null;
+  const last = data.length ? data.subarray(data.length - 16) : iv;
+  const pad = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv: last }, key, new Uint8Array(0)));
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, concatBytes(data, pad)));
+}
+
+async function opensshDecrypt(h, passphrase) {
+  const ci = SSH_CIPHERS[h.cipher];
+  if (!ci) fail('This key uses the ' + h.cipher + ' cipher, which isn\'t supported. Re-encrypt it with: ssh-keygen -p -Z aes256-ctr -f yourkey');
+  if (h.kdf !== 'bcrypt') fail('Unsupported key derivation: ' + h.kdf + '.');
+  const r = new SshReader(h.kdfopts);
+  const salt = r.string(), rounds = r.u32();
+  if (rounds > 1000) fail('This key uses ' + rounds + ' bcrypt rounds; more than 1000 isn\'t supported.');
+  const k = await bcryptPbkdf(te.encode(passphrase), salt, ci.keyLen + ci.ivLen, rounds);
+  let data = h.priv;
+  if (ci.tagLen) {
+    if (h.rest.length < ci.tagLen) fail('The key is damaged.');
+    data = concatBytes(h.priv, h.rest.subarray(0, ci.tagLen));
+  }
+  const plain = await aesDecrypt(ci, k.subarray(0, ci.keyLen), k.subarray(ci.keyLen), data);
+  if (!plain) fail('Wrong passphrase.');
+  return plain;
+}
+
+// RSA in openssh-key-v1, and the older PEM formats: PKCS#1 RSA, SEC1 EC,
+// unencrypted PKCS#8, and legacy "Proc-Type: 4,ENCRYPTED" PEM.
+
+PRIVATE_TYPES['ssh-rsa'] = async (r) => {
+  const n = r.mpint(), e = r.mpint(), d = r.mpint();
+  r.mpint(); // iqmp, recomputed
+  const p = r.mpint(), q = r.mpint();
+  return rsaPrivate(n, e, d, p, q);
+};
+
+// Minimal DER reader.
+function derRead(u8, o = 0) {
+  if (o + 2 > u8.length) fail('The key is damaged.');
+  const tag = u8[o];
+  let len = u8[o + 1], hdr = 2;
+  if (len & 0x80) {
+    const nb = len & 0x7f;
+    if (nb < 1 || nb > 3 || o + 2 + nb > u8.length) fail('The key is damaged.');
+    len = 0;
+    for (let i = 0; i < nb; i++) len = (len << 8) | u8[o + 2 + i];
+    hdr += nb;
+  }
+  if (o + hdr + len > u8.length) fail('The key is damaged.');
+  return { tag, value: u8.subarray(o + hdr, o + hdr + len), end: o + hdr + len };
+}
+function derSeq(u8) {
+  const out = [];
+  for (let o = 0; o < u8.length;) { const t = derRead(u8, o); out.push(t); o = t.end; }
+  return out;
+}
+const derInt = (t) => { if (t.tag !== 2) fail('The key is damaged.'); return bytesToBig(t.value); };
+const OID_RSA = '2a864886f70d010101', OID_EC = '2a8648ce3d0201', OID_P256 = '2a8648ce3d030107', OID_ED25519 = '2b6570';
+
+async function rsaFromPkcs1(der) {
+  const s = derSeq(derRead(der).value);
+  if (s.length < 9) fail('The RSA key is damaged.');
+  const [, n, e, d, p, q] = s.map((t) => derInt(t));
+  return Object.assign(await rsaPrivate(n, e, d, p, q), { type: 'ssh-rsa' });
+}
+
+function ecFromSec1(der, outerCurveOid) {
+  const s = derSeq(derRead(der).value);
+  if (s.length < 2 || s[1].tag !== 4) fail('The EC key is damaged.');
+  let curve = outerCurveOid;
+  for (const t of s.slice(2)) if (t.tag === 0xa0) curve = toHex(derRead(t.value).value);
+  if (curve && curve !== OID_P256) fail('Only P-256 EC keys are supported.');
+  let pubBytes = null;
+  for (const t of s.slice(2)) if (t.tag === 0xa1) pubBytes = derRead(t.value).value.subarray(1); // BIT STRING
+  return Object.assign(p256Private(bytesToBig(s[1].value), pubBytes), { type: 'ecdsa-sha2-nistp256' });
+}
+
+async function fromPkcs8(der) {
+  const s = derSeq(derRead(der).value);
+  if (s.length < 3 || s[1].tag !== 0x30 || s[2].tag !== 4) fail('The key is damaged.');
+  const alg = derSeq(s[1].value);
+  const oid = toHex(alg[0].value);
+  if (oid === OID_RSA) return rsaFromPkcs1(s[2].value);
+  if (oid === OID_EC) return ecFromSec1(s[2].value, alg[1] ? toHex(alg[1].value) : null);
+  if (oid === OID_ED25519) {
+    const seed = derRead(s[2].value).value;
+    if (seed.length !== 32) fail('The Ed25519 key is damaged.');
+    const x = await ed25519ScalarFromSeed(seed);
+    const pub = ED.encode(ED.mul(ED.G, x));
+    return { id: 'ed25519:' + toHex(pub), sec: { x }, blob: concatBytes(sshString('ssh-ed25519'), sshString(pub)), type: 'ssh-ed25519' };
+  }
+  fail('Unsupported key type in PKCS#8 file.');
+}
+
+PEM_FORMATS['RSA PRIVATE KEY'] = rsaFromPkcs1;
+PEM_FORMATS['EC PRIVATE KEY'] = (der) => ecFromSec1(der, null);
+PEM_FORMATS['PRIVATE KEY'] = fromPkcs8;
+
+const LEGACY_CIPHERS = { 'AES-128-CBC': 16, 'AES-256-CBC': 32 };
+
+async function parsePemPrivateKey(pem, passphrase) {
+  let der = pem.bytes;
+  if (pem.headers['Proc-Type'] === '4,ENCRYPTED') {
+    const [name, ivHex] = (pem.headers['DEK-Info'] || '').split(',');
+    const keyLen = LEGACY_CIPHERS[name];
+    if (!keyLen) fail('This key is encrypted with ' + (name || 'an unknown cipher') + ', which isn\'t supported. Convert it with: ssh-keygen -p -f yourkey');
+    const iv = fromHex(ivHex.trim());
+    // EVP_BytesToKey with MD5, one iteration, salt = first 8 bytes of the IV.
+    const pass = te.encode(passphrase);
+    let k = new Uint8Array(0), prev = new Uint8Array(0);
+    while (k.length < keyLen) { prev = md5(concatBytes(prev, pass, iv.subarray(0, 8))); k = concatBytes(k, prev); }
+    const key = await crypto.subtle.importKey('raw', k.subarray(0, keyLen), { name: 'AES-CBC' }, false, ['decrypt']);
+    try {
+      der = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, der));
+    } catch (e) { fail('Wrong passphrase.'); }
+    try { derRead(der); } catch (e) { fail('Wrong passphrase.'); }
+  }
+  try {
+    return await PEM_FORMATS[pem.label](der);
+  } catch (e) {
+    if (e instanceof ZsError && pem.headers['Proc-Type']) fail('Wrong passphrase.');
+    throw e;
+  }
+}
+
+// MD5 (RFC 1321), only for legacy PEM key derivation.
+function md5(msg) {
+  const S = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+  const K = new Uint32Array(64);
+  for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32);
+  const len = msg.length, padLen = ((len + 8) >> 6 << 6) + 64;
+  const buf = new Uint8Array(padLen);
+  buf.set(msg); buf[len] = 0x80;
+  const bits = len * 8;
+  for (let i = 0; i < 8; i++) buf[padLen - 8 + i] = Math.floor(bits / 2 ** (8 * i)) & 255;
+  const dv = new DataView(buf.buffer);
+  let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  for (let off = 0; off < padLen; off += 64) {
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+      else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+      F = (F + A + K[i] + dv.getUint32(off + g * 4, true)) | 0;
+      A = D; D = C; C = B;
+      const s = S[(i >> 4) * 4 + (i & 3)];
+      B = (B + ((F << s) | (F >>> (32 - s)))) | 0;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+  const out = new Uint8Array(16), ov = new DataView(out.buffer);
+  [a0, b0, c0, d0].forEach((w, i) => ov.setUint32(i * 4, w >>> 0, true));
+  return out;
+}
+
+// The ring signature: a CDS OR-proof made non-interactive with Fiat-Shamir.
+//
+// Each ring key i gets a 128-bit challenge c_i. The XOR of all c_i must equal
+// H(transcript)[0..16]. The signer simulates every other key's proof with a
+// random c_i, then answers its own share honestly. See PROTOCOL.md.
+
+const DOMAIN = 'zebrasign-github-v1';
+const ARMOR_BEGIN = '-----BEGIN ZEBRASIGN SIGNATURE-----';
+const ARMOR_END = '-----END ZEBRASIGN SIGNATURE-----';
+
+function xorInto(acc, c) { for (let i = 0; i < acc.length; i++) acc[i] ^= c[i]; }
+
+// Ring order: GitHub user ID, then SHA-256 of the key blob.
+function ringCompare(a, b) { return (a.userId - b.userId) || compareBytes(a.key.fpHash, b.key.fpHash); }
+
+function transcript(body, commitments) {
+  const parts = [sshString(DOMAIN), sshString(body.signed_at), sshString(body.msg), u32be(body.ring.length)];
+  for (const e of body.ring) parts.push(sshString(e.login), sshString(String(e.id)), sshString(e.blob));
+  for (const t of commitments) parts.push(sshString(t));
+  return concatBytes(...parts);
+}
+
+async function challenge(body, commitments) {
+  return (await sha256(transcript(body, commitments))).subarray(0, CHAL_BYTES);
+}
+
+// entries: [{ login, userId, key }] where key comes from prepareKey().
+// priv: from parsePrivateKey(). Returns the JSON body.
+async function signRing(msg, signedAt, entries, priv) {
+  if (!entries.length) fail('The ring is empty.');
+  const ring = entries.slice().sort(ringCompare);
+  for (let i = 1; i < ring.length; i++) {
+    if (ring[i].key.id === ring[i - 1].key.id) fail('The same key appears twice in the ring.');
+  }
+  const me = ring.findIndex((e) => e.key.id === priv.id);
+  if (me < 0) fail('This private key doesn\'t match any key in the ring.');
+
+  const body = {
+    v: 1, msg, signed_at: signedAt,
+    ring: ring.map((e) => ({ login: e.login, id: e.userId, key: e.key.line, blob: e.key.blob })),
+  };
+  const cs = [], ts = [], zs = [];
+  let mine;
+  for (let i = 0; i < ring.length; i++) {
+    const k = ring[i].key;
+    if (i === me) {
+      mine = await k.proto.commit(k);
+      ts[i] = mine.t;
+    } else {
+      cs[i] = randBytes(CHAL_BYTES);
+      const sim = await k.proto.simulate(k, cs[i]);
+      ts[i] = sim.t; zs[i] = sim.z;
+    }
+  }
+  const c = Uint8Array.from(await challenge(body, ts));
+  for (let i = 0; i < ring.length; i++) if (i !== me) xorInto(c, cs[i]);
+  cs[me] = c;
+  zs[me] = await ring[me].key.proto.respond(ring[me].key, priv.sec, mine.st, c);
+
+  body.proof = cs.map((ci, i) => ({ c: b64enc(ci), z: b64enc(zs[i]) }));
+  for (const e of body.ring) delete e.blob;
+  return body;
+}
+
+function armor(body) {
+  const b64 = b64enc(te.encode(JSON.stringify(body)));
+  const lines = b64.match(/.{1,64}/g);
+  return [ARMOR_BEGIN, ...lines, ARMOR_END].join('\n');
+}
+
+function dearmor(text) {
+  const i = text.indexOf(ARMOR_BEGIN), j = text.indexOf(ARMOR_END);
+  if (i < 0 && /<ZebraSign \d[^>]*>/.test(text)) {
+    fail('This signature was made with the original ZebraSign desktop app, which used its own keys instead of GitHub\'s. This page can\'t check it. That app is no longer maintained: github.com/LoadingScreen/zebra');
+  }
+  if (i < 0) fail('No ZebraSign signature found. It starts with ' + ARMOR_BEGIN);
+  if (j < i) fail('The signature is cut off. Copy all of it, down to the END line.');
+  let json;
+  try { json = tdStrict.decode(b64dec(text.slice(i + ARMOR_BEGIN.length, j))); } catch (e) {
+    fail('The signature is damaged (bad base64). Copy it again.');
+  }
+  try { return JSON.parse(json); } catch (e) { fail('The signature is damaged (bad JSON).'); }
+}
+
+const isWellFormed = (s) => typeof s === 'string' && tdStrict.decode(te.encode(s)) === s;
+const LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
+
+// Checks the proof against the keys carried in the signature. Doesn't touch
+// the network. Returns { body, ring: [{ login, id, key }] } or throws ZsError.
+async function verifyRing(body) {
+  if (!body || typeof body !== 'object' || body.v !== 1) fail('Unknown signature version.');
+  if (!isWellFormed(body.msg)) fail('The signature has no valid message.');
+  if (typeof body.signed_at !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.signed_at)) fail('The signature has no valid date.');
+  if (!Array.isArray(body.ring) || !body.ring.length) fail('The signature has no ring.');
+  if (!Array.isArray(body.proof) || body.proof.length !== body.ring.length) fail('The proof doesn\'t match the ring.');
+
+  const ring = [];
+  for (let i = 0; i < body.ring.length; i++) {
+    const e = body.ring[i];
+    if (!e || typeof e.login !== 'string' || !LOGIN_RE.test(e.login)) fail('Ring entry ' + (i + 1) + ' has an invalid login.');
+    if (!Number.isSafeInteger(e.id) || e.id <= 0) fail('Ring entry ' + (i + 1) + ' has an invalid user ID.');
+    if (typeof e.key !== 'string') fail('Ring entry ' + (i + 1) + ' has no key.');
+    const pk = await prepareKey(e.key);
+    if (!pk.usable) fail('Ring key ' + (i + 1) + ' (' + e.login + ') can\'t be used: ' + pk.reason);
+    ring.push({ login: e.login, userId: e.id, key: pk.key });
+  }
+  for (let i = 1; i < ring.length; i++) {
+    if (ring[i].key.id === ring[i - 1].key.id) fail('The same key appears twice in the ring.');
+    if (ringCompare(ring[i - 1], ring[i]) >= 0) fail('The ring isn\'t in the standard order.');
+  }
+  for (let i = 0; i < ring.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (ring[i].key.id === ring[j].key.id) fail('The same key appears twice in the ring.');
+      if (ring[i].userId === ring[j].userId && ring[i].login !== ring[j].login) fail('One user ID has two different logins.');
+    }
+  }
+
+  const acc = new Uint8Array(CHAL_BYTES), ts = [];
+  for (let i = 0; i < ring.length; i++) {
+    const p = body.proof[i];
+    let c, z;
+    try { c = b64dec(p.c); z = b64dec(p.z); } catch (e) { fail('The proof is damaged.'); }
+    if (c.length !== CHAL_BYTES) fail('The proof is damaged.');
+    const t = await ring[i].key.proto.recompute(ring[i].key, c, z);
+    if (!t) fail('The proof is damaged.');
+    ts.push(t);
+    xorInto(acc, c);
+  }
+  const hb = { msg: body.msg, signed_at: body.signed_at, ring: ring.map((e) => ({ login: e.login, id: e.userId, blob: e.key.blob })) };
+  const h = await challenge(hb, ts);
+  if (!bytesEqual(h, acc)) fail('The signature doesn\'t check out. The message, the ring, or the proof was changed, or it was never valid.');
+  return { body, ring };
+}
+
+// GitHub API: users and their published SSH keys. Unauthenticated, so
+// GitHub allows 60 requests per hour per IP. Each user costs 3 requests.
+
+const GH_API = 'https://api.github.com';
+
+async function ghGet(path) {
+  let res;
+  try {
+    res = await fetch(GH_API + path, {
+      headers: { Accept: 'application/vnd.github+json' },
+      credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer',
+    });
+  } catch (e) {
+    fail('Couldn\'t reach GitHub. Check your connection.');
+  }
+  if (res.status === 404) return null;
+  if (res.status === 403 || res.status === 429) {
+    const left = res.headers.get('x-ratelimit-remaining');
+    const reset = Number(res.headers.get('x-ratelimit-reset'));
+    if (left === '0' || res.status === 429) {
+      const when = reset ? ' Try again after ' + new Date(reset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.' : '';
+      fail('GitHub\'s limit of 60 requests an hour from your IP address is used up.' + when);
+    }
+  }
+  if (!res.ok) fail('GitHub returned an error (' + res.status + ').');
+  return res.json();
+}
+
+// Parse the username box: one per line; also accepts commas, spaces, @name,
+// and github.com/name.
+function parseLogins(text) {
+  const out = [], bad = [], seen = new Set();
+  for (let t of text.split(/[\s,]+/)) {
+    t = t.trim().replace(/^https?:\/\//, '').replace(/^(www\.)?github\.com\//, '').replace(/^@/, '').replace(/\/+$/, '');
+    if (!t) continue;
+    if (!LOGIN_RE.test(t)) { bad.push(t); continue; }
+    const k = t.toLowerCase();
+    if (!seen.has(k)) { seen.add(k); out.push(t); }
+  }
+  return { logins: out, bad };
+}
+
+// Both key lists for a login, deduplicated, each run through prepareKey().
+async function fetchKeys(login) {
+  const enc = encodeURIComponent(login);
+  const [auth, signing] = await Promise.all([ghGet('/users/' + enc + '/keys'), ghGet('/users/' + enc + '/ssh_signing_keys')]);
+  const lines = [];
+  for (const k of [...(auth || []), ...(signing || [])]) if (k && typeof k.key === 'string') lines.push(k.key);
+  const seen = new Set(), keys = [], skipped = [];
+  for (const line of lines) {
+    const pk = await prepareKey(line);
+    if (pk.usable) {
+      if (seen.has(pk.key.id)) continue;
+      seen.add(pk.key.id);
+      keys.push(pk.key);
+    } else {
+      skipped.push(pk);
+    }
+  }
+  return { keys, skipped };
+}
+
+// For the signer: { login, userId, avatar, keys, skipped } or { login, missing: true }.
+async function fetchRingUser(login) {
+  const [user, ks] = await Promise.all([ghGet('/users/' + encodeURIComponent(login)), fetchKeys(login)]);
+  if (!user) return { login, missing: true };
+  return { login: user.login, userId: user.id, avatar: avatarUrl(user.id), keys: ks.keys, skipped: ks.skipped };
+}
+
+// For the verifier: look the account up by ID, since logins can change.
+async function fetchUserById(id) {
+  const user = await ghGet('/user/' + id);
+  if (!user) return { id, missing: true };
+  const ks = await fetchKeys(user.login);
+  return { id, login: user.login, keyIds: new Set(ks.keys.map((k) => k.id)) };
+}
+
+function avatarUrl(id) { return 'https://avatars.githubusercontent.com/u/' + id + '?s=64&v=4'; }
+
+// Shared page helpers. Untrusted text only ever goes in through textContent.
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(typeof k === 'string' ? document.createTextNode(k) : k);
+  return e;
+}
+const $ = (id) => document.getElementById(id);
+
+function setStatus(node, text, kind) {
+  node.textContent = text || '';
+  node.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+let toastTimer;
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// Theme follows the system. The toggle lasts until the page is closed;
+// nothing is stored.
+document.documentElement.setAttribute('data-theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+function toggleTheme() {
+  const h = document.documentElement;
+  h.setAttribute('data-theme', h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+
+const KIND_LABEL = { ed25519: 'Ed25519', p256: 'P-256', rsa: 'RSA' };
+function keyLabel(k) { return k.kind === 'rsa' ? 'RSA ' + bitLength(k.n) : KIND_LABEL[k.kind]; }
+
+function avatarImg(id) { return el('img', { class: 'avatar', src: avatarUrl(id), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }); }
+function profileLink(login) { return el('a', { href: 'https://github.com/' + login, target: '_blank', rel: 'noopener noreferrer' }, login); }
+
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many || one + 's'); }
+
+function errText(e) {
+  if (e instanceof ZsError) return e.message;
+  console.error(e);
+  return 'Something went wrong: ' + (e && e.message || e);
+}
+
+// Signer page.
+
+let ring = null;       // { entries, users, signedAt, loginsText }
+let fetching = false;
+
+function ringStale() { return ring && ring.loginsText !== $('logins').value; }
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); }
+  }));
+  return out;
+}
+
+async function fetchRing() {
+  const status = $('ringStatus'), list = $('ringList'), sum = $('ringSummary');
+  const text = $('logins').value;
+  const { logins, bad } = parseLogins(text);
+  list.replaceChildren(); sum.textContent = '';
+  ring = null;
+  if (bad.length) return setStatus(status, 'Not valid GitHub usernames: ' + bad.join(', '), 'err');
+  if (!logins.length) return setStatus(status, 'Enter at least one username.', 'err');
+  if (logins.length > 20) setStatus(status, 'That\'s ' + logins.length + ' users. GitHub only allows about 20 per hour without signing in, so some may fail.');
+
+  fetching = true; update();
+  let done = 0;
+  setStatus(status, 'Fetching keys: 0 of ' + logins.length);
+  let users;
+  try {
+    users = await mapLimit(logins, 4, async (login) => {
+      const u = await fetchRingUser(login);
+      setStatus(status, 'Fetching keys: ' + (++done) + ' of ' + logins.length);
+      return u;
+    });
+  } catch (e) {
+    fetching = false; update();
+    return setStatus(status, errText(e), 'err');
+  }
+  fetching = false;
+
+  const seen = new Set(), found = [], missing = [];
+  for (const u of users) {
+    if (u.missing) { missing.push(u.login); continue; }
+    if (seen.has(u.userId)) continue;
+    seen.add(u.userId);
+    found.push(u);
+  }
+  for (const u of found) list.append(userRow(u));
+
+  const usable = found.filter((u) => u.keys.length);
+  const entries = usable.flatMap((u) => u.keys.map((key) => ({ login: u.login, userId: u.userId, key })));
+  setStatus(status, missing.length ? 'No GitHub user named ' + missing.join(', ') + '.' : '', missing.length ? 'err' : '');
+  if (entries.length) {
+    sum.textContent = 'Ring: ' + plural(usable.length, 'user') + ', ' + plural(entries.length, 'key') + '.';
+    ring = { entries, users: usable, signedAt: new Date().toISOString().slice(0, 10), loginsText: text };
+  } else {
+    sum.textContent = 'No usable keys, so there is no ring yet.';
+  }
+  update();
+  checkKey();
+}
+
+function userRow(u) {
+  const skipped = !u.keys.length;
+  const keys = el('ul', { class: 'keys' },
+    u.keys.map((k) => el('li', null, el('span', { class: 'kt' }, keyLabel(k)), el('span', { class: 'fp' }, k.fp))),
+    u.skipped.map((s) => el('li', { class: 'dead' }, el('span', { class: 'kt' }, s.type), el('span', { class: 'fp' }, 'skipped: ' + s.reason))));
+  if (!u.keys.length && !u.skipped.length) keys.append(el('li', { class: 'dead' }, 'No SSH keys on GitHub.'));
+  return el('div', { class: 'idrow' + (skipped ? ' skip' : '') }, avatarImg(u.userId),
+    el('div', { class: 'idmeta' },
+      el('div', { class: 'idname' }, profileLink(u.login), skipped ? el('span', { class: 'idnote' }, 'skipped, no usable key') : null),
+      keys));
+}
+
+// Private key box: detect a passphrase and, once the ring is known, which key it is.
+let keyCheckSeq = 0;
+async function checkKey() {
+  const seq = ++keyCheckSeq;
+  const status = $('keyStatus');
+  let info;
+  try { info = inspectPrivateKey($('key').value); } catch (e) {
+    $('passRow').hidden = true;
+    setStatus(status, errText(e), 'err');
+    return update();
+  }
+  $('passRow').hidden = !info.encrypted;
+  if (info.empty) { setStatus(status, ''); return update(); }
+  if (info.encrypted && !$('pass').value) { setStatus(status, 'This key has a passphrase.'); return update(); }
+  if (info.encrypted) setStatus(status, 'Checking passphrase...');
+  try {
+    const priv = await parsePrivateKey($('key').value, $('pass').value);
+    if (seq !== keyCheckSeq) return;
+    const label = { 'ssh-ed25519': 'Ed25519', 'ecdsa-sha2-nistp256': 'P-256', 'ssh-rsa': 'RSA' }[priv.type] || priv.type;
+    const fp = fingerprint(await sha256(priv.blob));
+    if (!ring) setStatus(status, label + ' key ' + fp + '. Fetch the ring to check it\'s in it.');
+    else {
+      const m = ring.entries.find((e) => e.key.id === priv.id);
+      if (m) setStatus(status, label + ' key ' + fp + ', listed on ' + m.login + '\'s GitHub account.', 'ok');
+      else setStatus(status, 'This ' + label + ' key (' + fp + ') isn\'t in the ring. Add the GitHub user it belongs to, or use a different key.', 'err');
+    }
+  } catch (e) {
+    if (seq !== keyCheckSeq) return;
+    setStatus(status, errText(e), 'err');
+  }
+  update();
+}
+
+function update() {
+  $('fetchBtn').disabled = fetching;
+  $('fetchBtn').textContent = ring && !ringStale() ? 'Fetch again' : 'Fetch keys';
+  const ready = ring && !ringStale() && $('msg').value.trim() && $('keyStatus').classList.contains('ok');
+  $('signBtn').disabled = !ready;
+  if (ringStale()) $('ringSummary').textContent = 'The list changed. Fetch keys again before signing.';
+}
+
+async function sign() {
+  const status = $('signStatus'), out = $('signOut');
+  out.replaceChildren();
+  $('signBtn').disabled = true;
+  setStatus(status, 'Signing...');
+  try {
+    const priv = await parsePrivateKey($('key').value, $('pass').value);
+    const body = await signRing($('msg').value, ring.signedAt, ring.entries, priv);
+    await verifyRing(JSON.parse(JSON.stringify(body))); // check before showing it
+    const text = armor(body);
+    setStatus(status, '');
+    const copy = el('button', { class: 'small', onclick: async () => {
+      try { await navigator.clipboard.writeText(text); toast('Copied'); } catch (e) { toast('Copy failed. Select the text and copy it.'); }
+    } }, 'Copy');
+    out.append(el('div', { class: 'out' },
+      el('pre', { class: 'sigtext' }, text),
+      el('div', { class: 'outfoot' },
+        el('span', null, 'Signed as one of ' + plural(ring.users.length, 'GitHub user') + '. Anyone can check it on the ', el('a', { href: 'verify.html' }, 'verify page'), '.'),
+        copy)));
+  } catch (e) {
+    setStatus(status, errText(e), 'err');
+  }
+  update();
+}
+
+$('fetchBtn').addEventListener('click', fetchRing);
+$('logins').addEventListener('input', update);
+$('msg').addEventListener('input', update);
+$('key').addEventListener('input', checkKey);
+let passTimer;
+$('pass').addEventListener('input', () => { clearTimeout(passTimer); passTimer = setTimeout(checkKey, 400); });
+$('signBtn').addEventListener('click', sign);
+$('keyFile').addEventListener('change', async (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  if (f.size > 64 * 1024) { setStatus($('keyStatus'), 'That file is too large to be a private key.', 'err'); return; }
+  $('key').value = await f.text();
+  ev.target.value = '';
+  checkKey();
+});
+update();
+
+</script>
+</body>
+</html>
