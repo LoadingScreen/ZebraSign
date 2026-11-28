@@ -68,9 +68,11 @@ function userRow(u) {
     u.keys.map((k) => el('li', null, el('span', { class: 'kt' }, keyLabel(k)), el('span', { class: 'fp' }, k.fp))),
     u.skipped.map((s) => el('li', { class: 'dead' }, el('span', { class: 'kt' }, s.type), el('span', { class: 'fp' }, 'skipped: ' + s.reason))));
   if (!u.keys.length && !u.skipped.length) keys.append(el('li', { class: 'dead' }, 'No SSH keys on GitHub.'));
-  const help = skipped ? el('div', { class: 'idhelp' }, 'If this is your account, add a key at ',
+  const help = skipped ? el('div', { class: 'idhelp' }, 'If this is your account, make a key for testing by running ',
+    el('code', null, 'ssh-keygen -t ed25519 -f ~/.ssh/zebrasign_test'), ' in a terminal. Then copy the contents of ',
+    el('code', null, '~/.ssh/zebrasign_test.pub'), ' into ',
     el('a', { href: 'https://github.com/settings/ssh/new', target: '_blank', rel: 'noopener noreferrer' }, 'github.com/settings/ssh/new'),
-    ' with Key type set to Signing Key, then fetch the keys again.') : null;
+    ', set Key type to Signing Key, and fetch the keys again.') : null;
   return el('div', { class: 'idrow' + (skipped ? ' skip' : '') }, avatarImg(u.userId),
     el('div', { class: 'idmeta' },
       el('div', { class: 'idname' }, profileLink(u.login), skipped ? el('span', { class: 'idnote' }, 'skipped, no usable key') : null),
