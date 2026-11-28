@@ -25,9 +25,20 @@
   </nav>
 
   <header class="hd">
-    <h1>ZebraSign</h1>
+    <div class="brandrow"><h1>ZebraSign</h1><span class="stage">Alpha</span></div>
     <p class="sub">Sign a message as one of a group of GitHub users, using the SSH keys they already publish on GitHub. Anyone can check that one of them signed it, but not which one.</p>
   </header>
+
+  <section class="notice">
+    <p><b>This is an alpha, for testing with friends.</b> The cryptography hasn't been reviewed yet and the signature format may change, so don't use it for anything that matters.</p>
+    <p>To try it:</p>
+    <ol>
+      <li>Make a key for testing. In a terminal, run <code>ssh-keygen -t ed25519 -f ~/.ssh/zebrasign_test</code></li>
+      <li>Add it to GitHub. Copy the contents of <code>~/.ssh/zebrasign_test.pub</code> into <a href="https://github.com/settings/ssh/new" target="_blank" rel="noopener noreferrer">github.com/settings/ssh/new</a> and set Key type to Signing Key.</li>
+      <li>Below, enter your GitHub username and a few others, write a message, and paste in your private key from <code>~/.ssh/zebrasign_test</code>.</li>
+    </ol>
+    <p>You can use a key that's already on your GitHub account instead, but a test key is safer. Report problems on <a href="https://github.com/LoadingScreen/ZebraSign/issues" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+  </section>
 
   <section class="panel">
     <div class="phead"><span class="pnum">1</span><span class="ptitle">Ring</span>
@@ -51,9 +62,19 @@
 
   <section class="panel">
     <div class="phead"><span class="pnum">3</span><span class="ptitle">Private key</span>
-      <p class="phint">The private key for one of your keys in the ring, such as the contents of ~/.ssh/id_ed25519. It will stay in this page. A key you added to GitHub as a signing key is the better choice, since it can't push code.</p>
+      <p class="phint">The private key for one of your keys in the ring, such as the contents of ~/.ssh/zebrasign_test. It will stay in this page. A key you added to GitHub as a signing key is the better choice, since it can't push code.</p>
     </div>
     <div class="pbody">
+      <p class="howto" id="copyHow"></p>
+      <details class="more" id="copyMore">
+        <summary>How to copy it on other systems</summary>
+        <ul>
+          <li>Mac: in Terminal, run <code>pbcopy &lt; ~/.ssh/zebrasign_test</code></li>
+          <li>Windows: in PowerShell, run <code>Get-Content $env:USERPROFILE\.ssh\zebrasign_test | Set-Clipboard</code></li>
+          <li>Linux: run <code>cat ~/.ssh/zebrasign_test</code> and copy everything it prints</li>
+        </ul>
+        <p>For a key you already had, use its file name instead, such as id_ed25519 or id_rsa. It's the file without .pub at the end.</p>
+      </details>
       <textarea id="key" rows="5" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
       <div class="row mt"><label class="filebtn"><input type="file" id="keyFile"><span>Open a key file</span></label></div>
       <div id="passRow" hidden>
@@ -75,7 +96,7 @@
 
   <footer>
     <p>Everything runs in this page. Your private key and message aren't sent anywhere. The only network requests are to GitHub for public keys and avatars. Nothing is saved.</p>
-    <p>This is a test version. The RSA proof and the way different key types are combined haven't been reviewed by a cryptographer yet.</p>
+    <p>The source code and a description of the cryptography are <a href="https://github.com/LoadingScreen/ZebraSign" target="_blank" rel="noopener noreferrer">on GitHub</a>.</p>
   </footer>
 </div>
 <div class="toast" id="toast"></div>

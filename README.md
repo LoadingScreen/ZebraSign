@@ -7,11 +7,11 @@ This is a test version. It replaces the original ZebraSign desktop app
 ([LoadingScreen/zebra](https://github.com/LoadingScreen/zebra)), which used its
 own keys and is no longer maintained. The two formats aren't compatible.
 
-- `docs/` holds the built pages: `sign.html`, `verify.html`, and `index.html`
-  (a copy of the sign page). Each is one file with no external scripts.
-  GitHub Pages serves this folder.
-- `src/` is the shared core, `pages/` the page templates. `node build.js`
-  rebuilds `docs/`. Commit the rebuilt files; Pages doesn't run the build.
+- `src/` is the shared core and `pages/` the page templates and copy. Edit
+  those. On every push to main, a GitHub Actions workflow
+  (`.github/workflows/pages.yml`) runs the tests, builds the pages and
+  publishes them. Each built page is one self-contained HTML file.
+- `node build.js` builds them locally into `docs/` (not committed).
 - `PROTOCOL.md` describes the construction.
 
 ## Tests

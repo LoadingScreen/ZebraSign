@@ -68,10 +68,13 @@ function userRow(u) {
     u.keys.map((k) => el('li', null, el('span', { class: 'kt' }, keyLabel(k)), el('span', { class: 'fp' }, k.fp))),
     u.skipped.map((s) => el('li', { class: 'dead' }, el('span', { class: 'kt' }, s.type), el('span', { class: 'fp' }, 'skipped: ' + s.reason))));
   if (!u.keys.length && !u.skipped.length) keys.append(el('li', { class: 'dead' }, 'No SSH keys on GitHub.'));
+  const help = skipped ? el('div', { class: 'idhelp' }, 'If this is your account, add a key at ',
+    el('a', { href: 'https://github.com/settings/ssh/new', target: '_blank', rel: 'noopener noreferrer' }, 'github.com/settings/ssh/new'),
+    ' with Key type set to Signing Key, then fetch the keys again.') : null;
   return el('div', { class: 'idrow' + (skipped ? ' skip' : '') }, avatarImg(u.userId),
     el('div', { class: 'idmeta' },
       el('div', { class: 'idname' }, profileLink(u.login), skipped ? el('span', { class: 'idnote' }, 'skipped, no usable key') : null),
-      keys));
+      keys, help));
 }
 
 // Private key box: detect a passphrase and, once the ring is known, which key it is.
@@ -98,7 +101,7 @@ async function checkKey() {
     else {
       const m = ring.entries.find((e) => e.key.id === priv.id);
       if (m) setStatus(status, label + ' key ' + fp + ', listed on ' + m.login + '\'s GitHub account.', 'ok');
-      else setStatus(status, 'This ' + label + ' key (' + fp + ') isn\'t in the ring. Add the GitHub user it belongs to, or use a different key.', 'err');
+      else setStatus(status, 'This ' + label + ' key (' + fp + ') isn\'t in the ring. Add the GitHub user it belongs to, or use a different key. If it\'s yours, it may not be on GitHub yet: add its .pub file at github.com/settings/ssh/new as a Signing Key, then fetch the keys again.', 'err');
     }
   } catch (e) {
     if (seq !== keyCheckSeq) return;
@@ -139,6 +142,19 @@ async function sign() {
   }
   update();
 }
+
+// Show the copy command for this system; the others stay under "other systems".
+(function copyHelp() {
+  const ua = navigator.userAgent;
+  const touchMac = /Mac/.test(ua) && navigator.maxTouchPoints > 1; // iPads report as Mac
+  const cmd = /iPhone|iPad|Android/.test(ua) || touchMac ? null
+    : /Mac/.test(ua) ? ['To copy it on a Mac, run ', 'pbcopy < ~/.ssh/zebrasign_test', ' in Terminal, then paste it here.']
+    : /Win/.test(ua) ? ['To copy it on Windows, run ', 'Get-Content $env:USERPROFILE\\.ssh\\zebrasign_test | Set-Clipboard', ' in PowerShell, then paste it here.']
+    : /Linux|X11/.test(ua) ? ['To see it on Linux, run ', 'cat ~/.ssh/zebrasign_test', ', then copy everything it prints and paste it here.']
+    : null;
+  if (!cmd) { $('copyMore').open = true; return; }
+  $('copyHow').append(cmd[0], el('code', null, cmd[1]), cmd[2]);
+})();
 
 $('fetchBtn').addEventListener('click', fetchRing);
 $('logins').addEventListener('input', update);

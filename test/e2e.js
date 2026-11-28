@@ -63,6 +63,10 @@ const ok = (m) => console.log('  ok  ' + m);
   const status = await page.textContent('#ringStatus');
   /ghost/.test(status) ? ok('missing user reported') : fail('ghost not reported: ' + status);
   (await page.textContent('#ringList')).includes('skipped, no usable key') ? ok('hardware-key user skipped') : fail('dave not skipped');
+  (await page.textContent('.stage')) === 'Alpha' ? ok('Alpha label shown') : fail('no Alpha label');
+  (await page.textContent('#ringList')).includes('settings/ssh/new') ? ok('add-a-key help on skipped user') : fail('no add-key help');
+  const how = await page.textContent('#copyHow');
+  /cat ~\/.ssh\/zebrasign_test/.test(how) ? ok('copy command for this system: ' + how) : fail('copyHow: ' + how);
   requests === 15 ? ok('15 API requests for 5 users') : fail('requests: ' + requests);
 
   await page.fill('#msg', 'The meeting moved to Thursday.\nBring the draft.');
@@ -86,7 +90,7 @@ const ok = (m) => console.log('  ok  ' + m);
 
   // Key not in ring.
   await page.fill('#key', makeKey('ed25519').priv);
-  await page.waitForFunction(() => /isn't in the ring/.test(document.getElementById('keyStatus').textContent));
+  await page.waitForFunction(() => /isn't in the ring.*settings\/ssh\/new/.test(document.getElementById('keyStatus').textContent));
   (await page.isDisabled('#signBtn')) ? ok('outside key refused, sign disabled') : fail('sign enabled for outside key');
   await page.fill('#key', carol.pub);
   await page.waitForFunction(() => /public key/.test(document.getElementById('keyStatus').textContent));
