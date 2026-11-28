@@ -37,7 +37,12 @@ a{color:var(--accent)}
 html[data-theme="dark"] .themetoggle .ic-sun{display:inline}
 html[data-theme="dark"] .themetoggle .ic-moon{display:none}
 
-.hd{padding:30px 0 6px}
+.wrap{position:relative;z-index:0}
+.hd{padding:30px 0 6px;position:relative}
+/* Faint zebra hide behind the title, in the text colour, fading left and down. */
+.hd::after{content:"";position:absolute;right:0;top:0;width:430px;height:215px;z-index:-1;pointer-events:none;
+  --hide:url("__HIDE_PNG__");background:var(--ink);opacity:.13;
+  -webkit-mask:var(--hide) 0 0/100% 100% no-repeat;mask:var(--hide) 0 0/100% 100% no-repeat}
 h1{font-weight:600;letter-spacing:-.01em;font-size:clamp(30px,6vw,48px);margin:0;color:var(--ink)}
 .stage{font-size:.34em;font-weight:700;color:var(--red);letter-spacing:0;line-height:1;vertical-align:baseline;position:relative;top:-1.5em;margin-left:.15em}
 /* The notice sits between two heavy rules, set apart from the numbered steps. */
@@ -122,6 +127,8 @@ button:disabled:hover{color:var(--ink);background:transparent}
 .vbadge{font-weight:700;font-size:30px;letter-spacing:-.01em;line-height:1.2}
 .v-valid .vbadge{color:var(--green)}
 .v-invalid .vbadge{color:var(--red)}
+.v-pending .vbadge{color:var(--dimmer)}
+.v-warn .vbadge{color:var(--amber)}
 .vtext{font-size:15px;color:var(--dim);line-height:1.55}
 .vtext b{color:var(--ink)}
 .msgbox{margin-top:16px;border-left:2px solid var(--accent-line);padding:4px 0 4px 16px;font-size:16px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word}
@@ -136,6 +143,7 @@ footer a{color:var(--accent);text-decoration:none}
 footer a:hover{text-decoration:underline}
 @media (prefers-reduced-motion:reduce){button,.toast{transition:none}}
 @media(max-width:560px){
+  .hd::after{width:260px;height:130px}
   .sitenav .links{margin-left:0;width:100%}
   .keys .kt{min-width:0}
 }

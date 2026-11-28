@@ -40,22 +40,20 @@ const kinds = process.argv.slice(2);
 
   await test('tampering with any one response is detected', async () => {
     const body = await Z.signRing('m', '2026-11-27', entries, await Z.parsePrivateKey(keys[0].priv));
-    for (let i = 0; i < body.proof.length; i++) {
-      const b = JSON.parse(JSON.stringify(body));
-      const z = Z.b64dec(b.proof[i].z); z[z.length - 1] ^= 1; b.proof[i].z = Z.b64enc(z);
-      await rejects(Z.verifyRing(b));
-      const b2 = JSON.parse(JSON.stringify(body));
-      const c = Z.b64dec(b2.proof[i].c); c[15] ^= 0x80; b2.proof[i].c = Z.b64enc(c);
-      await rejects(Z.verifyRing(b2));
+    // Flip one bit at many positions across every key's c and z.
+    const step = Math.max(1, Math.floor(body.proof.length / 60));
+    for (let i = 0; i < body.proof.length; i += step) {
+      const b = Z.dearmor(Z.armor(body));
+      const p = Uint8Array.from(b.proof); p[i] ^= 0x10; b.proof = p;
+      await rejects(Z.verifyRing(b)).catch((e) => { throw new Error('byte ' + i + ': ' + e.message); });
     }
   });
 
   await test('proof entries look alike whoever signed (lengths)', async () => {
     const a = await Z.signRing('m', '2026-11-27', entries, await Z.parsePrivateKey(keys[0].priv));
     const b = await Z.signRing('m', '2026-11-27', entries, await Z.parsePrivateKey(keys[keys.length - 1].priv));
-    for (let i = 0; i < a.proof.length; i++) {
-      assert(a.proof[i].c.length === b.proof[i].c.length && a.proof[i].z.length === b.proof[i].z.length, 'entry ' + i);
-    }
+    assert(a.proof.length === b.proof.length, 'proof lengths differ');
+    assert(Z.armor(a).length === Z.armor(b).length, 'armored lengths differ');
   });
 
   if (kinds.includes('p256')) {

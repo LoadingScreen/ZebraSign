@@ -85,18 +85,21 @@ async function entry(login, userId, line) {
 
   await test('tampering is detected', async () => {
     const body = await Z.signRing('original', '2026-11-27', entries, await Z.parsePrivateKey(keys[3].priv));
-    const clone = () => JSON.parse(JSON.stringify(body));
+    // A fresh copy decoded from the armored text, as a verifier would see it.
+    const clone = () => Z.dearmor(Z.armor(body));
+    const flip = (b, i) => { const p = Uint8Array.from(b.proof); p[i] ^= 1; b.proof = p; };
     const cases = {
       message: (b) => { b.msg = 'changed'; },
       date: (b) => { b.signed_at = '2026-11-28'; },
       login: (b) => { b.ring[0].login = 'mallory'; },
       'user id': (b) => { b.ring[4].id = 55556; },
       'key swap': (b) => { b.ring[0].key = makeKey('ed25519').pub; },
-      'order swap': (b) => { [b.ring[2], b.ring[3]] = [b.ring[3], b.ring[2]]; [b.proof[2], b.proof[3]] = [b.proof[3], b.proof[2]]; },
-      'challenge': (b) => { const c = Z.b64dec(b.proof[0].c); c[0] ^= 1; b.proof[0].c = Z.b64enc(c); },
-      'response': (b) => { const z = Z.b64dec(b.proof[2].z); z[31] ^= 1; b.proof[2].z = Z.b64enc(z); },
-      'drop member': (b) => { b.ring.pop(); b.proof.pop(); },
-      version: (b) => { b.v = 2; },
+      'same-user key swap': (b) => { [b.ring[2], b.ring[3]] = [b.ring[3], b.ring[2]]; },
+      'challenge': (b) => flip(b, 0),
+      'response': (b) => flip(b, 2 * 48 + 16 + 31),
+      'drop member': (b) => { b.ring.pop(); b.proof = b.proof.subarray(0, b.proof.length - 48); },
+      'truncated proof': (b) => { b.proof = b.proof.subarray(0, b.proof.length - 1); },
+      version: (b) => { b.v = 3; },
     };
     for (const [name, mutate] of Object.entries(cases)) {
       const b = clone(); mutate(b);
@@ -119,6 +122,32 @@ async function entry(login, userId, line) {
     let threw = false;
     try { Z.dearmor(a.replace(/\n(.)/, '\n!')); } catch (e) { threw = /damaged/.test(e.message); }
     assert(threw);
+  });
+
+  await test('binary encoding round-trips and rejects junk', async () => {
+    const body = await Z.signRing('caf\u00e9 \u2713\nline', '2026-11-27', entries, await Z.parsePrivateKey(keys[1].priv));
+    const back = Z.decodeBody(Z.encodeBody(body));
+    assert(back.msg === body.msg && back.signed_at === '2026-11-27' && back.ring.length === 5);
+    assert(JSON.stringify(back.ring) === JSON.stringify(body.ring), 'ring differs');
+    assert(Z.toHex(back.proof) === Z.toHex(body.proof), 'proof differs');
+    const enc = Z.encodeBody(body);
+    for (const cut of [1, 3, 10, enc.length - 400]) {
+      let threw = false;
+      try { await Z.verifyRing(Z.decodeBody(enc.subarray(0, cut))); } catch (e) { threw = e instanceof Z.ZsError; }
+      assert(threw, 'cut at ' + cut);
+    }
+    // Ring entries out of order in the encoding are refused.
+    const swapped = Object.assign({}, body, { ring: [body.ring[2], body.ring[0], body.ring[1], body.ring[3], body.ring[4]] });
+    let msg = '';
+    try { Z.decodeBody(Z.encodeBody(swapped)); } catch (e) { msg = e.message; }
+    assert(/standard order/.test(msg), msg);
+  });
+
+  await test('old JSON-format signatures get a plain message', async () => {
+    const old = '-----BEGIN ZEBRASIGN SIGNATURE-----\n' + Z.b64enc(new TextEncoder().encode('{"v":1,"msg":"x"}')) + '\n-----END ZEBRASIGN SIGNATURE-----';
+    let msg = '';
+    try { Z.dearmor(old); } catch (e) { msg = e.message; }
+    assert(/older test format/.test(msg), msg);
   });
 
   await test('signature from the old desktop app is recognized', async () => {

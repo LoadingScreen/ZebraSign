@@ -1,4 +1,5 @@
-const { need } = require('./harness');
+const { need, load } = require('./harness');
+const Z = load();
 // End-to-end in Chrome with a fake GitHub API. Usage: node test/e2e.js
 const path = require('path');
 const { chromium } = need('playwright');
@@ -98,6 +99,11 @@ const ok = (m) => console.log('  ok  ' + m);
   await page.fill('#logins', 'alice\nbob');
   (await page.textContent('#ringSummary')).includes('changed') ? ok('editing the list marks the ring stale') : fail('stale not shown');
 
+  await page.fill('#logins', 'alice');
+  await page.click('#fetchBtn');
+  await page.waitForFunction(() => /^Ring/.test(document.getElementById('ringSummary').textContent));
+  (await page.textContent('#ringSummary')).includes('With one user, the signature shows who signed it') ? ok('one-user ring warning') : fail('no one-user warning');
+
   // Verify.
   await page.goto('file://' + path.join(__dirname, '..', 'docs', 'verify.html'));
   await page.fill('#sig', 'From the group chat:\n\n' + sig + '\n');
@@ -115,13 +121,38 @@ const ok = (m) => console.log('  ok  ' + m);
   await page.waitForFunction(() => /no longer listed on GitHub/.test(document.getElementById('result').textContent));
   const rt = await page.textContent('#result');
   rt.includes('1 key of 4 is no longer listed') && rt.includes('now caroline') ? ok('rotated key and rename shown') : fail('rotation: ' + rt);
+  const rv = await page.textContent('.verdict');
+  rv.includes('Not confirmed') && !rv.includes('One of these') ? ok('missing key: headline says not confirmed') : fail('rotation verdict: ' + rv);
   await page.screenshot({ path: shots + '/verify-rotated.png', fullPage: true });
   USERS.bob.auth = bobOld; USERS.carol = USERS.caroline; delete USERS.caroline;
 
+  // One-user ring: says who signed.
+  {
+    const ak = (await Z.prepareKey(alice.pub)).key;
+    const sb = await Z.signRing('Just me.', '2026-11-27', [{ login: 'alice', userId: 583231, key: ak }], await Z.parsePrivateKey(alice.priv, 'zebra crossing'));
+    await page.fill('#sig', Z.armor(sb));
+    await page.click('#verifyBtn');
+    await page.waitForFunction(() => /still listed on this/.test(document.getElementById('result').textContent));
+    const sv = await page.textContent('.verdict');
+    sv.includes('alice signed this.') && sv.includes("isn't hidden") ? ok('one-user verdict names the signer') : fail('one-user verdict: ' + sv);
+  }
+
+  // Forged ring: valid proof over keys that aren't on these accounts.
+  {
+    const fk1 = makeKey('ed25519'), fk2 = makeKey('ed25519');
+    const e1 = (await Z.prepareKey(fk1.pub)).key, e2 = (await Z.prepareKey(fk2.pub)).key;
+    const fb = await Z.signRing('I am alice.', '2026-11-27', [{ login: 'alice', userId: 583231, key: e1 }, { login: 'bob', userId: 1024025, key: e2 }], await Z.parsePrivateKey(fk1.priv));
+    await page.fill('#sig', Z.armor(fb));
+    await page.click('#verifyBtn');
+    await page.waitForFunction(() => /no longer listed on GitHub/.test(document.getElementById('result').textContent));
+    const fv = await page.textContent('.verdict');
+    fv.includes('Not confirmed') && !fv.includes('One of these') ? ok('forged ring with outside keys: not confirmed') : fail('forged ring verdict: ' + fv);
+  }
+
   // Tampered.
-  const body = JSON.parse(Buffer.from(sig.split('\n').slice(1, -1).join(''), 'base64').toString());
+  const body = Z.dearmor(sig);
   body.msg = 'The meeting moved to Friday.\nBring the draft.';
-  const forged = '-----BEGIN ZEBRASIGN SIGNATURE-----\n' + Buffer.from(JSON.stringify(body)).toString('base64').match(/.{1,64}/g).join('\n') + '\n-----END ZEBRASIGN SIGNATURE-----';
+  const forged = Z.armor(body);
   await page.fill('#sig', forged);
   await page.click('#verifyBtn');
   await page.waitForSelector('.v-invalid');
@@ -137,7 +168,8 @@ const ok = (m) => console.log('  ok  ' + m);
   await page.fill('#sig', sig);
   await page.click('#verifyBtn');
   await page.waitForFunction(() => /Couldn't check/.test(document.getElementById('result').textContent));
-  (await page.textContent('.verdict')).includes('Valid') ? ok('offline: still VALID, GitHub check reported failed') : fail('offline');
+  const off = await page.textContent('.verdict');
+  off.includes('Not confirmed') && off.includes("couldn't reach GitHub") ? ok('offline: proof checks out, headline says not confirmed') : fail('offline: ' + off);
 
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('file://' + path.join(__dirname, '..', 'docs', 'verify.html'));

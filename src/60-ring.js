@@ -4,7 +4,8 @@
 // H(transcript)[0..16]. The signer simulates every other key's proof with a
 // random c_i, then answers its own share honestly. See PROTOCOL.md.
 
-const DOMAIN = 'zebrasign-github-v1';
+const DOMAIN = 'zebrasign-github-v2';
+const FORMAT = 2;
 const ARMOR_BEGIN = '-----BEGIN ZEBRASIGN SIGNATURE-----';
 const ARMOR_END = '-----END ZEBRASIGN SIGNATURE-----';
 
@@ -25,7 +26,8 @@ async function challenge(body, commitments) {
 }
 
 // entries: [{ login, userId, key }] where key comes from prepareKey().
-// priv: from parsePrivateKey(). Returns the JSON body.
+// priv: from parsePrivateKey(). Returns the body: { v, msg, signed_at,
+// ring: [{ login, id, key }], proof } where proof is c_i || z_i for each key.
 async function signRing(msg, signedAt, entries, priv) {
   if (!entries.length) fail('The ring is empty.');
   const ring = entries.slice().sort(ringCompare);
@@ -36,7 +38,7 @@ async function signRing(msg, signedAt, entries, priv) {
   if (me < 0) fail('This private key doesn\'t match any key in the ring.');
 
   const body = {
-    v: 1, msg, signed_at: signedAt,
+    v: FORMAT, msg, signed_at: signedAt,
     ring: ring.map((e) => ({ login: e.login, id: e.userId, key: e.key.line, blob: e.key.blob })),
   };
   const cs = [], ts = [], zs = [];
@@ -57,14 +59,98 @@ async function signRing(msg, signedAt, entries, priv) {
   cs[me] = c;
   zs[me] = await ring[me].key.proto.respond(ring[me].key, priv.sec, mine.st, c);
 
-  body.proof = cs.map((ci, i) => ({ c: b64enc(ci), z: b64enc(zs[i]) }));
+  body.proof = concatBytes(...cs.flatMap((ci, i) => [ci, zs[i]]));
   for (const e of body.ring) delete e.blob;
   return body;
 }
 
+// Binary format, version 2. Integers are unsigned LEB128 varints.
+//   byte 2 | u16 days since 1970-01-01 (signed_at) | varint len, message UTF-8
+//   varint users | per user, in ring order:
+//     varint user ID | varint len, login | varint keys | per key: varint len, SSH key blob
+//   proof: per key, in ring order: 16-byte c, then z (32 bytes for Ed25519 and
+//   P-256; the modulus length for RSA)
+const DAY_MS = 86400000;
+
+function varint(n) {
+  const out = [];
+  do { let b = n % 128; n = Math.floor(n / 128); if (n) b |= 128; out.push(b); } while (n);
+  return Uint8Array.from(out);
+}
+const lenBytes = (u8) => concatBytes(varint(u8.length), u8);
+
+function encodeBody(body) {
+  const days = Date.parse(body.signed_at + 'T00:00:00Z') / DAY_MS;
+  const parts = [Uint8Array.of(FORMAT, days >> 8, days & 255), lenBytes(te.encode(body.msg))];
+  const groups = [];
+  for (const e of body.ring) {
+    const g = groups[groups.length - 1];
+    if (g && g.id === e.id) g.keys.push(e.key); else groups.push({ id: e.id, login: e.login, keys: [e.key] });
+  }
+  parts.push(varint(groups.length));
+  for (const g of groups) {
+    parts.push(varint(g.id), lenBytes(te.encode(g.login)), varint(g.keys.length));
+    for (const k of g.keys) parts.push(lenBytes(parseKeyLine(k).blob));
+  }
+  parts.push(body.proof);
+  return concatBytes(...parts);
+}
+
+class BinReader {
+  constructor(u8) { this.b = u8; this.o = 0; }
+  bytes(n) {
+    if (this.o + n > this.b.length) fail('The signature is damaged (it ends too early). Copy all of it.');
+    const r = this.b.subarray(this.o, this.o + n); this.o += n; return r;
+  }
+  varint(max) {
+    let n = 0, mul = 1;
+    for (let i = 0; i < 8; i++) {
+      const b = this.bytes(1)[0];
+      n += (b & 127) * mul;
+      if (!(b & 128)) {
+        if (i > 0 && b === 0) fail('The signature is damaged.');
+        if (n > max) fail('The signature is damaged.');
+        return n;
+      }
+      mul *= 128;
+    }
+    fail('The signature is damaged.');
+  }
+  lenBytes(max) { return this.bytes(this.varint(max)); }
+}
+
+function decodeBody(bytes) {
+  const r = new BinReader(bytes);
+  const [v, d1, d2] = r.bytes(3);
+  if (v !== FORMAT) fail('This signature uses a format this page doesn\'t know (version ' + v + ').');
+  const signed_at = new Date(((d1 << 8) | d2) * DAY_MS).toISOString().slice(0, 10);
+  let msg;
+  try { msg = tdStrict.decode(r.lenBytes(1 << 20)); } catch (e) {
+    if (e instanceof ZsError) throw e;
+    fail('The signature is damaged (the message isn\'t valid text).');
+  }
+  const ring = [];
+  const nUsers = r.varint(1000);
+  let lastId = 0;
+  for (let u = 0; u < nUsers; u++) {
+    const id = r.varint(Number.MAX_SAFE_INTEGER);
+    if (id <= lastId) fail('The ring isn\'t in the standard order.');
+    lastId = id;
+    const login = String.fromCharCode(...r.lenBytes(39));
+    const nKeys = r.varint(100);
+    if (!nKeys) fail('The signature is damaged.');
+    for (let k = 0; k < nKeys; k++) {
+      const blob = r.lenBytes(4096);
+      let type;
+      try { type = new SshReader(blob).text(); } catch (e) { fail('The signature is damaged.'); }
+      ring.push({ login, id, key: type + ' ' + b64enc(blob) });
+    }
+  }
+  return { v, msg, signed_at, ring, proof: bytes.subarray(r.o) };
+}
+
 function armor(body) {
-  const b64 = b64enc(te.encode(JSON.stringify(body)));
-  const lines = b64.match(/.{1,64}/g);
+  const lines = b64enc(encodeBody(body)).match(/.{1,64}/g);
   return [ARMOR_BEGIN, ...lines, ARMOR_END].join('\n');
 }
 
@@ -75,11 +161,12 @@ function dearmor(text) {
   }
   if (i < 0) fail('No ZebraSign signature found. It starts with ' + ARMOR_BEGIN);
   if (j < i) fail('The signature is cut off. Copy all of it, down to the END line.');
-  let json;
-  try { json = tdStrict.decode(b64dec(text.slice(i + ARMOR_BEGIN.length, j))); } catch (e) {
+  let bytes;
+  try { bytes = b64dec(text.slice(i + ARMOR_BEGIN.length, j)); } catch (e) {
     fail('The signature is damaged (bad base64). Copy it again.');
   }
-  try { return JSON.parse(json); } catch (e) { fail('The signature is damaged (bad JSON).'); }
+  if (bytes[0] === 0x7b) fail('This signature uses an older test format that this page no longer reads. Ask the signer to sign the message again.');
+  return decodeBody(bytes);
 }
 
 const isWellFormed = (s) => typeof s === 'string' && tdStrict.decode(te.encode(s)) === s;
@@ -88,11 +175,11 @@ const LOGIN_RE = /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/;
 // Checks the proof against the keys carried in the signature. Doesn't touch
 // the network. Returns { body, ring: [{ login, id, key }] } or throws ZsError.
 async function verifyRing(body) {
-  if (!body || typeof body !== 'object' || body.v !== 1) fail('Unknown signature version.');
+  if (!body || typeof body !== 'object' || body.v !== FORMAT) fail('Unknown signature version.');
   if (!isWellFormed(body.msg)) fail('The signature has no valid message.');
   if (typeof body.signed_at !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.signed_at)) fail('The signature has no valid date.');
   if (!Array.isArray(body.ring) || !body.ring.length) fail('The signature has no ring.');
-  if (!Array.isArray(body.proof) || body.proof.length !== body.ring.length) fail('The proof doesn\'t match the ring.');
+  if (!(body.proof instanceof Uint8Array)) fail('The signature has no proof.');
 
   const ring = [];
   for (let i = 0; i < body.ring.length; i++) {
@@ -116,11 +203,11 @@ async function verifyRing(body) {
   }
 
   const acc = new Uint8Array(CHAL_BYTES), ts = [];
-  for (let i = 0; i < ring.length; i++) {
-    const p = body.proof[i];
-    let c, z;
-    try { c = b64dec(p.c); z = b64dec(p.z); } catch (e) { fail('The proof is damaged.'); }
-    if (c.length !== CHAL_BYTES) fail('The proof is damaged.');
+  const want = ring.reduce((n, e) => n + CHAL_BYTES + e.key.proto.zLen(e.key), 0);
+  if (body.proof.length !== want) fail('The proof doesn\'t match the ring. The signature may be cut off or changed.');
+  for (let i = 0, o = 0; i < ring.length; i++) {
+    const c = body.proof.subarray(o, o + CHAL_BYTES); o += CHAL_BYTES;
+    const z = body.proof.subarray(o, o + ring[i].key.proto.zLen(ring[i].key)); o += z.length;
     const t = await ring[i].key.proto.recompute(ring[i].key, c, z);
     if (!t) fail('The proof is damaged.');
     ts.push(t);

@@ -26,6 +26,7 @@ function makeSchnorr(group, scalarLen) {
       const R = group.add(group.mul(group.G, s), group.neg(group.mul(pub.point, c2n(c))));
       return group.encode(R);
     },
+    zLen() { return scalarLen; },
   };
 }
 

@@ -12,6 +12,8 @@ own keys and is no longer maintained. The two formats aren't compatible.
   (`.github/workflows/pages.yml`) runs the tests, builds the pages and
   publishes them. Each built page is one self-contained HTML file.
 - `node build.js` builds them locally into `docs/` (not committed).
+- `tools/stripes.py` generates the zebra-stripe images in `pages/` (needs numpy
+  and Pillow). The build embeds them in the pages.
 - `PROTOCOL.md` describes the construction.
 
 ## Tests

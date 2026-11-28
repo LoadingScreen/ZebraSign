@@ -53,7 +53,8 @@ async function fetchRing() {
   const entries = usable.flatMap((u) => u.keys.map((key) => ({ login: u.login, userId: u.userId, key })));
   setStatus(status, missing.length ? 'No GitHub user named ' + missing.join(', ') + '.' : '', missing.length ? 'err' : '');
   if (entries.length) {
-    sum.textContent = 'Ring: ' + plural(usable.length, 'user') + ', ' + plural(entries.length, 'key') + '.';
+    sum.textContent = 'Ring: ' + plural(usable.length, 'user') + ', ' + plural(entries.length, 'key') + '.' +
+      (usable.length === 1 ? ' With one user, the signature shows who signed it. Add others to hide among them.' : '');
     ring = { entries, users: usable, signedAt: new Date().toISOString().slice(0, 10), loginsText: text };
   } else {
     sum.textContent = 'No usable keys, so there is no ring yet.';
@@ -128,8 +129,8 @@ async function sign() {
   try {
     const priv = await parsePrivateKey($('key').value, $('pass').value);
     const body = await signRing($('msg').value, ring.signedAt, ring.entries, priv);
-    await verifyRing(JSON.parse(JSON.stringify(body))); // check before showing it
     const text = armor(body);
+    await verifyRing(dearmor(text)); // check the exact text before showing it
     setStatus(status, '');
     const copy = el('button', { class: 'small', onclick: async () => {
       try { await navigator.clipboard.writeText(text); toast('Copied'); } catch (e) { toast('Copy failed. Select the text and copy it.'); }
@@ -137,7 +138,8 @@ async function sign() {
     out.append(el('div', { class: 'out' },
       el('pre', { class: 'sigtext' }, text),
       el('div', { class: 'outfoot' },
-        el('span', null, 'Signed as one of ' + plural(ring.users.length, 'GitHub user') + '. Anyone can check it on the ', el('a', { href: 'verify.html' }, 'verify page'), '.'),
+        el('span', null, ring.users.length === 1 ? 'Signed as ' + ring.users[0].login + '. ' : 'Signed as one of ' + ring.users.length + ' GitHub users. ',
+          'Anyone can check it on the ', el('a', { href: 'verify.html' }, 'verify page'), '.'),
         copy)));
   } catch (e) {
     setStatus(status, errText(e), 'err');

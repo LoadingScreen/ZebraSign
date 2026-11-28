@@ -23,11 +23,17 @@ async function verify() {
     u.keys.push({ key: e.key, st: el('span', { class: 'st wait' }, 'checking') });
   }
 
+  // The proof only shows that one of the keys in the signature signed. The
+  // headline says "these GitHub users" only after GitHub confirms the keys.
+  const badge = el('span', { class: 'vbadge' }, 'Checking');
+  const vtext = el('span', { class: 'vtext' }, 'The proof checks out. Checking that the keys are on these GitHub accounts...');
+  const verdict = el('div', { class: 'verdict v-pending' }, badge, vtext);
+  const setVerdict = (cls, label, ...text) => { verdict.className = 'verdict ' + cls; badge.textContent = label; vtext.replaceChildren(...text); };
+
   const noteBox = el('div');
   const ghStatus = el('div', { class: 'status' }, 'Checking the keys on GitHub...');
   out.append(
-    el('div', { class: 'verdict v-valid' }, el('span', { class: 'vbadge' }, 'Valid'),
-      el('span', { class: 'vtext' }, el('b', null, 'One of these ' + plural(users.length, 'GitHub user') + ' signed this;'), ' which one stays hidden.')),
+    verdict,
     el('div', { class: 'msgbox' }, body.msg),
     el('div', { class: 'meta' }, 'Keys fetched by the signer on ' + body.signed_at + '.'),
     el('div', { class: 'idlist' }, users.map((u) => {
@@ -62,12 +68,21 @@ async function verify() {
   } catch (e) {
     if (seq !== verifySeq) return;
     for (const u of users) for (const k of u.keys) if (k.st.textContent === 'checking') { k.st.className = 'st wait'; k.st.textContent = 'not checked'; }
-    setStatus(ghStatus, 'Couldn\'t check the keys on GitHub. ' + errText(e) + ' The signature is still valid for the keys it carries.', 'err');
+    setVerdict('v-warn', 'Not confirmed', 'The proof checks out for the keys in the signature, but this page couldn\'t reach GitHub, so it can\'t confirm the keys belong to these accounts.');
+    setStatus(ghStatus, 'Couldn\'t check the keys on GitHub. ' + errText(e), 'err');
     return;
   }
   const total = ring.length;
-  if (!missingKeys) setStatus(ghStatus, (total === 1 ? 'The key is' : 'All ' + total + ' keys are') + ' still listed on these GitHub accounts.', 'ok');
-  else {
+  if (!missingKeys) {
+    setStatus(ghStatus, (total === 1 ? 'The key is' : 'All ' + total + ' keys are') + ' still listed on ' + (users.length === 1 ? 'this GitHub account.' : 'these GitHub accounts.'), 'ok');
+    if (users.length === 1) {
+      setVerdict('v-valid', 'Valid', el('b', null, users[0].login + ' signed this.'), ' With only one user in the ring, the signer isn\'t hidden.');
+    } else {
+      setVerdict('v-valid', 'Valid', el('b', null, 'One of these ' + users.length + ' GitHub users signed this;'), ' which one stays hidden.');
+    }
+  } else {
+    setVerdict('v-warn', 'Not confirmed', 'The proof checks out, but ' + missingKeys + ' of ' + total + (total === 1 ? ' key isn\'t' : ' keys aren\'t') +
+      ' on these GitHub accounts now. That shows someone holding one of the keys in the signature signed this, not that one of these users did.');
     setStatus(ghStatus, plural(missingKeys, 'key') + ' of ' + total + (missingKeys === 1 ? ' is' : ' are') + ' no longer listed on GitHub.');
     noteBox.append(el('p', { class: 'note' }, 'A key that\'s no longer listed may have been removed or replaced by its owner since ' + body.signed_at +
       '. Or the signer used keys that never belonged to that account. This page can\'t tell which.'));

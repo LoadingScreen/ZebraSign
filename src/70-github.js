@@ -19,7 +19,8 @@ async function ghGet(path) {
     const reset = Number(res.headers.get('x-ratelimit-reset'));
     if (left === '0' || res.status === 429) {
       const when = reset ? ' Try again after ' + new Date(reset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '.' : '';
-      fail('GitHub\'s limit of 60 requests an hour from your IP address is used up.' + when);
+      fail('GitHub\'s limit of 60 requests an hour from your IP address is used up.' + when +
+        ' In Tor Browser, choosing "New Tor circuit for this site" gives you a different address.');
     }
   }
   if (!res.ok) fail('GitHub returned an error (' + res.status + ').');

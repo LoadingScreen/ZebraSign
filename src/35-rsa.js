@@ -1,8 +1,11 @@
 // RSA keys: Guillou-Quisquater proof of knowledge of an e-th root.
 //
-// Each key gets a fixed y = FDH(key) in Z_n. Only the key's owner can compute
-// x = y^d. One GQ round has a challenge below e, so the 128-bit challenge is
-// split into chunks of floor(log2 e) bits (16 for e = 65537, giving 8 rounds).
+// Each key gets a fixed y = FDH(key) in Z_n. The proof is a single GQ round
+// with exponent E = e^m, the smallest power of e that is at least 2^128, so the
+// whole 128-bit challenge fits (m = 8 for e = 65537). The key's owner can
+// compute the E-th root x = y^(d^m). Two accepting answers to one commitment
+// still give an e-th root of y, so this is as hard to fake as the RSA key is to
+// break. See PROTOCOL.md.
 
 const SMALL_PRIMES = (() => {
   const lim = 4096, sieve = new Uint8Array(lim), out = [];
@@ -51,51 +54,36 @@ async function rsaFdh(blob, n) {
   return mod(bytesToBig(concatBytes(...parts).subarray(0, len)), n);
 }
 
-function gqChunks(pub, c) {
-  const cb = bytesToBig(c), total = CHAL_BYTES * 8, out = [];
-  for (let j = 0; j < pub.rounds; j++) {
-    const start = j * pub.bits, end = Math.min(total, start + pub.bits);
-    out.push((cb >> BigInt(total - end)) & ((1n << BigInt(end - start)) - 1n));
-  }
-  return out;
-}
-
 const randUnit = (n) => randBelow(n - 1n) + 1n;
 
 const GQ = {
   simulate(pub, c) {
-    const ts = [], zs = [];
-    gqChunks(pub, c).forEach((cj) => {
-      const z = randUnit(pub.n);
-      ts.push(bigToBytes((modpow(z, pub.e, pub.n) * modpow(pub.yinv, cj, pub.n)) % pub.n, pub.k));
-      zs.push(bigToBytes(z, pub.k));
-    });
-    return { t: concatBytes(...ts), z: concatBytes(...zs) };
+    const z = randUnit(pub.n);
+    const t = (modpow(z, pub.E, pub.n) * modpow(pub.yinv, bytesToBig(c), pub.n)) % pub.n;
+    return { t: bigToBytes(t, pub.k), z: bigToBytes(z, pub.k) };
   },
   commit(pub) {
-    const rs = [], ts = [];
-    for (let j = 0; j < pub.rounds; j++) {
-      const r = randUnit(pub.n);
-      rs.push(r);
-      ts.push(bigToBytes(modpow(r, pub.e, pub.n), pub.k));
-    }
-    return { t: concatBytes(...ts), st: rs };
+    const r = randUnit(pub.n);
+    return { t: bigToBytes(modpow(r, pub.E, pub.n), pub.k), st: r };
   },
-  respond(pub, sec, rs, c) {
-    return concatBytes(...gqChunks(pub, c).map((cj, j) => bigToBytes((rs[j] * modpow(sec.x, cj, pub.n)) % pub.n, pub.k)));
+  respond(pub, sec, r, c) {
+    return bigToBytes((r * modpow(sec.x, bytesToBig(c), pub.n)) % pub.n, pub.k);
   },
   recompute(pub, c, z) {
-    if (z.length !== pub.k * pub.rounds) return null;
-    const ts = [];
-    const cs = gqChunks(pub, c);
-    for (let j = 0; j < pub.rounds; j++) {
-      const zj = bytesToBig(z.subarray(j * pub.k, (j + 1) * pub.k));
-      if (zj <= 0n || zj >= pub.n) return null;
-      ts.push(bigToBytes((modpow(zj, pub.e, pub.n) * modpow(pub.yinv, cs[j], pub.n)) % pub.n, pub.k));
-    }
-    return concatBytes(...ts);
+    if (z.length !== pub.k) return null;
+    const zz = bytesToBig(z);
+    if (zz <= 0n || zz >= pub.n) return null;
+    return bigToBytes((modpow(zz, pub.E, pub.n) * modpow(pub.yinv, bytesToBig(c), pub.n)) % pub.n, pub.k);
   },
+  zLen(pub) { return pub.k; },
 };
+
+// Smallest m with e^m >= 2^128.
+function gqPower(e) {
+  let m = 1, E = e;
+  while (E < (1n << BigInt(CHAL_BYTES * 8))) { E *= e; m++; }
+  return { m, E };
+}
 
 function rsaId(n, e) { return 'rsa:' + e.toString(16) + ':' + n.toString(16); }
 
@@ -113,18 +101,20 @@ KEY_TYPES['ssh-rsa'] = {
     const y = await rsaFdh(blob, n);
     let yinv;
     try { yinv = modinv(y, n); } catch (err) { fail('RSA key has an invalid modulus.'); }
-    const eb = bitLength(e) - 1;
-    return { n, e, y, yinv, k: byteLength(n), bits: eb, rounds: Math.ceil(CHAL_BYTES * 8 / eb), id: rsaId(n, e) };
+    const { m, E } = gqPower(e);
+    return { n, e, E, m, y, yinv, k: byteLength(n), id: rsaId(n, e) };
   },
 };
 
-// x = y^d mod n via CRT, checked against x^e = y.
+// x = y^(d^m) mod n via CRT, checked against x^E = y.
 async function rsaPrivate(n, e, d, p, q) {
   if (p * q !== n || d <= 0n) fail('The RSA key is damaged.');
   const blob = concatBytes(sshString('ssh-rsa'), sshMpint(e), sshMpint(n));
   const y = await rsaFdh(blob, n);
-  const xp = modpow(y, d % (p - 1n), p), xq = modpow(y, d % (q - 1n), q);
+  const { m, E } = gqPower(e);
+  const xp = modpow(y, modpow(d % (p - 1n), BigInt(m), p - 1n), p);
+  const xq = modpow(y, modpow(d % (q - 1n), BigInt(m), q - 1n), q);
   const x = xq + q * mod((xp - xq) * modinv(q, p), p);
-  if (modpow(x, e, n) !== y) fail('The RSA key is damaged.');
+  if (modpow(x, E, n) !== y) fail('The RSA key is damaged.');
   return { id: rsaId(n, e), sec: { x }, blob };
 }

@@ -5,7 +5,7 @@ const vm = require('vm');
 
 const EXPORTS = ['ED', 'P256', 'KEY_TYPES', 'prepareKey', 'parsePrivateKey', 'inspectPrivateKey', 'signRing',
   'verifyRing', 'armor', 'dearmor', 'parseLogins', 'fetchRingUser', 'fetchUserById', 'ZsError', 'b64enc', 'b64dec',
-  'toHex', 'fromHex', 'bcryptPbkdf', 'md5', 'bytesToBig', 'bigToBytes', 'modpow', 'ed25519ScalarFromSeed', 'sha256'];
+  'toHex', 'fromHex', 'encodeBody', 'decodeBody', 'bcryptPbkdf', 'md5', 'bytesToBig', 'bigToBytes', 'modpow', 'ed25519ScalarFromSeed', 'sha256'];
 
 function load(extraGlobals = {}) {
   const dir = path.join(__dirname, '..', 'src');

@@ -29,7 +29,7 @@ async function roundTrip(privText, pubLine, pass) {
     for (const bits of [2048, 4096]) {
       const k = makeKey('rsa', { bits });
       const body = await roundTrip(k.priv, k.pub);
-      assert(Z.b64dec(body.proof[0].z).length === 8 * bits / 8, 'expected 8 rounds');
+      assert(body.proof.length === 16 + bits / 8, 'expected one round: ' + body.proof.length);
     }
     const k = makeKey('rsa', { passphrase: 'pw', cipher: 'aes256-ctr' });
     await roundTrip(k.priv, k.pub, 'pw');
@@ -76,7 +76,37 @@ async function roundTrip(privText, pubLine, pass) {
   await test('e = 3 works (128 one-bit rounds)', async () => {
     const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048, publicExponent: 3 });
     const body = await roundTrip(privateKey.export({ type: 'pkcs1', format: 'pem' }), pubOf(privateKey));
-    assert(Z.b64dec(body.proof[0].z).length === 128 * 256);
+    assert(body.proof.length === 16 + 256, 'expected one round');
+  });
+
+  await test('two answers to one commitment reveal an e-th root of y (special soundness)', async () => {
+    const k = makeKey('rsa');
+    const priv = await Z.parsePrivateKey(k.priv);
+    const pub = (await Z.prepareKey(k.pub)).key;
+    const GQ = Z.KEY_TYPES['ssh-rsa'].proto;
+    const n = pub.n, e = pub.e, E = pub.E;
+    assert(E === e ** BigInt(pub.m) && E >= 2n ** 128n && E / e < 2n ** 128n, 'E is the smallest power >= 2^128');
+    const inv = (a) => { let [r0, r1, s0, s1] = [((a % n) + n) % n, n, 1n, 0n]; while (r1) { const q = r0 / r1; [r0, r1] = [r1, r0 - q * r1]; [s0, s1] = [s1, s0 - q * s1]; } return ((s0 % n) + n) % n; };
+    const pow = (b, x) => x < 0n ? Z.modpow(inv(b), -x, n) : Z.modpow(b, x, n);
+    for (let trial = 0; trial < 3; trial++) {
+      const { t, st } = GQ.commit(pub);
+      let c1, c2, d;
+      do { c1 = crypto.randomBytes(16); c2 = crypto.randomBytes(16); d = Z.bytesToBig(c1) - Z.bytesToBig(c2); } while (d % e === 0n);
+      const z1 = Z.bytesToBig(GQ.respond(pub, priv.sec, st, new Uint8Array(c1)));
+      const z2 = Z.bytesToBig(GQ.respond(pub, priv.sec, st, new Uint8Array(c2)));
+      // Both answers verify against the same commitment.
+      assert(Z.toHex(GQ.recompute(pub, new Uint8Array(c1), Z.bigToBytes(z1, pub.k))) === Z.toHex(t));
+      assert(Z.toHex(GQ.recompute(pub, new Uint8Array(c2), Z.bigToBytes(z2, pub.k))) === Z.toHex(t));
+      // a^E = y^d with gcd(E, d) = 1; Bezout u*E + v*d = 1 gives w = a^v y^u, w^E = y.
+      const a = (z1 * inv(z2)) % n;
+      let [r0, r1, u0, u1, v0, v1] = [E, d, 1n, 0n, 0n, 1n];
+      while (r1) { const q = r0 / r1; [r0, r1] = [r1, r0 - q * r1]; [u0, u1] = [u1, u0 - q * u1]; [v0, v1] = [v1, v0 - q * v1]; }
+      if (r0 < 0n) { r0 = -r0; u0 = -u0; v0 = -v0; }
+      assert(r0 === 1n, 'gcd(E, d) = 1');
+      const w = (pow(a, v0) * pow(pub.y, u0)) % n;
+      const root = pow(w, E / e);
+      assert(Z.modpow(root, e, n) === pub.y, 'extracted an e-th root of y');
+    }
   });
 
   const rsaLine = (e, n) => {
