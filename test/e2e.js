@@ -63,7 +63,7 @@ const ok = (m) => console.log('  ok  ' + m);
   const status = await page.textContent('#ringStatus');
   /ghost/.test(status) ? ok('missing user reported') : fail('ghost not reported: ' + status);
   (await page.textContent('#ringList')).includes('skipped, no usable key') ? ok('hardware-key user skipped') : fail('dave not skipped');
-  (await page.textContent('.stage')) === 'Alpha' ? ok('Alpha label shown') : fail('no Alpha label');
+  (await page.textContent('.stage')) === 'alpha' ? ok('alpha label shown') : fail('no Alpha label');
   (await page.textContent('#ringList')).includes('settings/ssh/new') ? ok('add-a-key help on skipped user') : fail('no add-key help');
   const how = await page.textContent('#copyHow');
   /cat ~\/.ssh\/zebrasign_test/.test(how) ? ok('copy command for this system: ' + how) : fail('copyHow: ' + how);
@@ -104,7 +104,7 @@ const ok = (m) => console.log('  ok  ' + m);
   await page.click('#verifyBtn');
   await page.waitForFunction(() => /still listed on these/.test(document.getElementById('result').textContent));
   const vt = await page.textContent('.verdict');
-  vt.includes('VALID') && vt.includes('One of these 3 GitHub users signed this') ? ok('verdict: ' + vt) : fail('verdict: ' + vt);
+  vt.includes('Valid') && vt.includes('One of these 3 GitHub users signed this') ? ok('verdict: ' + vt) : fail('verdict: ' + vt);
   (await page.textContent('.msgbox')) === 'The meeting moved to Thursday.\nBring the draft.' ? ok('message shown exactly') : fail('message');
   await page.screenshot({ path: shots + '/verify.png', fullPage: true });
 
@@ -137,7 +137,7 @@ const ok = (m) => console.log('  ok  ' + m);
   await page.fill('#sig', sig);
   await page.click('#verifyBtn');
   await page.waitForFunction(() => /Couldn't check/.test(document.getElementById('result').textContent));
-  (await page.textContent('.verdict')).includes('VALID') ? ok('offline: still VALID, GitHub check reported failed') : fail('offline');
+  (await page.textContent('.verdict')).includes('Valid') ? ok('offline: still VALID, GitHub check reported failed') : fail('offline');
 
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('file://' + path.join(__dirname, '..', 'docs', 'verify.html'));

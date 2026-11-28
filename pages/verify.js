@@ -10,7 +10,7 @@ async function verify() {
   try {
     res = await verifyRing(dearmor($('sig').value));
   } catch (e) {
-    out.append(el('div', { class: 'verdict v-invalid' }, el('span', { class: 'vbadge' }, 'INVALID'), el('span', { class: 'vtext' }, errText(e))));
+    out.append(el('div', { class: 'verdict v-invalid' }, el('span', { class: 'vbadge' }, 'Not valid'), el('span', { class: 'vtext' }, errText(e))));
     return;
   }
   const { body, ring } = res;
@@ -26,7 +26,7 @@ async function verify() {
   const noteBox = el('div');
   const ghStatus = el('div', { class: 'status' }, 'Checking the keys on GitHub...');
   out.append(
-    el('div', { class: 'verdict v-valid' }, el('span', { class: 'vbadge' }, 'VALID'),
+    el('div', { class: 'verdict v-valid' }, el('span', { class: 'vbadge' }, 'Valid'),
       el('span', { class: 'vtext' }, el('b', null, 'One of these ' + plural(users.length, 'GitHub user') + ' signed this;'), ' which one stays hidden.')),
     el('div', { class: 'msgbox' }, body.msg),
     el('div', { class: 'meta' }, 'Keys fetched by the signer on ' + body.signed_at + '.'),

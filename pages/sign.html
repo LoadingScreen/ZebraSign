@@ -25,19 +25,19 @@
   </nav>
 
   <header class="hd">
-    <div class="brandrow"><h1>ZebraSign</h1><span class="stage">Alpha</span></div>
+    <h1>ZebraSign<sup class="stage">alpha</sup></h1>
     <p class="sub">Sign a message as one of a group of GitHub users, using the SSH keys they already publish on GitHub. Anyone can check that one of them signed it, but not which one.</p>
   </header>
 
   <section class="notice">
-    <p><b>This is an alpha version, for testing with friends.</b> The cryptography hasn't been reviewed yet and the signature format may change, so don't use it for anything that matters.</p>
+    <p><b>This is an alpha, for testing with friends.</b> The cryptography hasn't been reviewed yet and the signature format may change, so don't use it for anything that matters.</p>
     <p>To try it:</p>
     <ol>
       <li>Make a key for testing. In a terminal, run <code>ssh-keygen -t ed25519 -f ~/.ssh/zebrasign_test</code></li>
       <li>Add it to GitHub. Copy the contents of <code>~/.ssh/zebrasign_test.pub</code> into <a href="https://github.com/settings/ssh/new" target="_blank" rel="noopener noreferrer">github.com/settings/ssh/new</a> and set Key type to Signing Key.</li>
       <li>Below, enter your GitHub username and a few others, write a message, and paste in your private key from <code>~/.ssh/zebrasign_test</code>.</li>
     </ol>
-    <p>You can use a key that's already on your GitHub account instead, but a test key is safer. Report problems on <a href="https://github.com/LoadingScreen/ZebraSign/issues" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+    <p>You can use a key that's already on your GitHub account instead, but a test key is safer. Report problems on <a href="https://github.com/kurt-brown/ZebraSign/issues" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
   </section>
 
   <section class="panel">
@@ -96,7 +96,7 @@
 
   <footer>
     <p>Everything runs in this page. Your private key and message aren't sent anywhere. The only network requests are to GitHub for public keys and avatars. Nothing is saved.</p>
-    <p>The source code and a description of the cryptography are <a href="https://github.com/LoadingScreen/ZebraSign" target="_blank" rel="noopener noreferrer">on GitHub</a>.</p>
+    <p>The source code and a description of the cryptography are <a href="https://github.com/kurt-brown/ZebraSign" target="_blank" rel="noopener noreferrer">on GitHub</a>.</p>
   </footer>
 </div>
 <div class="toast" id="toast"></div>

@@ -71,7 +71,7 @@ function armor(body) {
 function dearmor(text) {
   const i = text.indexOf(ARMOR_BEGIN), j = text.indexOf(ARMOR_END);
   if (i < 0 && /<ZebraSign \d[^>]*>/.test(text)) {
-    fail('This signature was made with the original ZebraSign desktop app, which used its own keys instead of GitHub\'s. This page can\'t check it. That app is no longer maintained: github.com/LoadingScreen/zebra');
+    fail('This signature was made with the original ZebraSign desktop app, which used its own keys instead of GitHub\'s. This page can\'t check it. That app is no longer maintained: github.com/kurt-brown/zebra');
   }
   if (i < 0) fail('No ZebraSign signature found. It starts with ' + ARMOR_BEGIN);
   if (j < i) fail('The signature is cut off. Copy all of it, down to the END line.');
