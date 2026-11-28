@@ -1,10 +1,10 @@
 # ZebraSign
 
 Sign a message as "one of these GitHub users", using the SSH keys GitHub
-publishes. Runs in the browser: https://loadingscreen.github.io/ZebraSign/
+publishes. Runs in the browser: https://kurt-brown.github.io/ZebraSign/
 
 This is a test version. It replaces the original ZebraSign desktop app
-([LoadingScreen/zebra](https://github.com/LoadingScreen/zebra)), which used its
+([kurt-brown/zebra](https://github.com/kurt-brown/zebra)), which used its
 own keys and is no longer maintained. The two formats aren't compatible.
 
 - `src/` is the shared core and `pages/` the page templates and copy. Edit
